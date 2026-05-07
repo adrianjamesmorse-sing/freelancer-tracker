@@ -2,7 +2,7 @@ create table if not exists app_users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   full_name text not null,
-  role text not null default ''viewer'',
+  role text not null default 'viewer',
   created_at timestamptz not null default now()
 );
 
@@ -13,7 +13,7 @@ create table if not exists freelancers (
   personal_email text,
   phone_number text,
   address text,
-  freelancer_status text not null default ''Active'',
+  freelancer_status text not null default 'Active',
   registration_number boolean not null default false,
   question_flag boolean not null default false,
   comments text
@@ -42,7 +42,7 @@ create table if not exists allocations (
   role_within_project text,
   owner_manager_name text,
   owner_manager_email text,
-  allocation_status text not null default ''Active''
+  allocation_status text not null default 'Active'
 );
 
 create table if not exists notifications (
@@ -51,7 +51,7 @@ create table if not exists notifications (
   notification_type text not null,
   scheduled_for timestamptz not null,
   sent_at timestamptz,
-  status text not null default ''queued'',
+  status text not null default 'queued',
   message text not null,
   created_at timestamptz not null default now()
 );

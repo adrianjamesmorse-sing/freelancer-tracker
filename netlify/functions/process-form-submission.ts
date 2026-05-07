@@ -1,13 +1,17 @@
-export default async (request: Request) => {
-  if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "content-type": "application/json" }
-    });
+import type { Handler } from '@netlify/functions'
+
+export const handler: Handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' }),
+    }
   }
 
-  return new Response(JSON.stringify({ message: "Stub only: map Microsoft Form payload into upserts here." }), {
-    status: 202,
-    headers: { "content-type": "application/json" }
-  });
-};
+  return {
+    statusCode: 202,
+    body: JSON.stringify({
+      message: 'Stub only: map Microsoft Form payload into freelancer/project/allocation upserts here.',
+    }),
+  }
+}

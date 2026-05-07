@@ -4,6 +4,7 @@ import { TrackerProvider } from './context/TrackerContext'
 import { DashboardPage } from './pages/DashboardPage'
 import { FreelancerDetailPage } from './pages/FreelancerDetailPage'
 import { FreelancersPage } from './pages/FreelancersPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 
@@ -17,6 +18,7 @@ function App() {
           <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Routes>
       </Layout>
     </TrackerProvider>

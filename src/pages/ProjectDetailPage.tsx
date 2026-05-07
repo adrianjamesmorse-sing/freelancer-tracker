@@ -66,9 +66,9 @@ export function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/projects" className="text-sm text-brand-300 hover:text-brand-200">â† Back to projects</Link>
+        <Link to="/projects" className="text-sm text-brand-300 hover:text-brand-200">← Back to projects</Link>
         <h2 className="mt-2 text-3xl font-semibold text-white">{project.projectName}</h2>
-        <p className="mt-2 text-sm text-slate-400">{project.entity} Â· {project.projectManagerName}</p>
+        <p className="mt-2 text-sm text-slate-400">{project.entity} · {project.projectManagerName}</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
@@ -92,7 +92,7 @@ export function ProjectDetailPage() {
                     <tr key={allocation.id}>
                       <td className="py-3 pr-4 text-white">{freelancer?.freelancerName ?? 'Unknown freelancer'}</td>
                       <td className="py-3 pr-4 text-slate-300">{allocation.roleWithinProject}</td>
-                      <td className="py-3 pr-4 text-slate-300">{formatDate(allocation.contractStartDate)} â†’ {formatDate(allocation.contractEndDate)}</td>
+                      <td className="py-3 pr-4 text-slate-300">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</td>
                       <td className="py-3 pr-4 text-slate-300">{formatMoney(allocation.dailyRate, allocation.dailyRateCurrency)}</td>
                       <td className="py-3 pr-4"><StatusBadge value={allocation.allocationStatus} /></td>
                       <td className="py-3 pr-4">

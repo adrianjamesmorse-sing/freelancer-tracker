@@ -1,14 +1,32 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { allocations as seedAllocations, freelancers as seedFreelancers, notifications as seedNotifications, projects as seedProjects } from '../data/mockData'
+import {
+  allocations as seedAllocations,
+  freelancers as seedFreelancers,
+  notificationRules as seedNotificationRules,
+  notifications as seedNotifications,
+  projects as seedProjects,
+} from '../data/mockData'
 import { mapCsvRows, normalizeKey } from '../lib/csv'
 import { daysUntil } from '../lib/format'
-import type { Allocation, AppNotification, CsvImportSummary, Freelancer, NewAllocationInput, NewFreelancerInput, NewProjectInput, Project } from '../types'
+import type {
+  Allocation,
+  AppNotification,
+  CsvImportSummary,
+  Freelancer,
+  NewAllocationInput,
+  NewFreelancerInput,
+  NewNotificationRuleInput,
+  NewProjectInput,
+  NotificationRule,
+  Project,
+} from '../types'
 
 interface TrackerContextValue {
   freelancers: Freelancer[]
   projects: Project[]
   allocations: Allocation[]
   notifications: AppNotification[]
+  notificationRules: NotificationRule[]
   enrichedAllocations: Array<Allocation & { freelancer: Freelancer; project: Project; daysRemaining: number }>
   dashboard: {
     activeFreelancers: number
@@ -16,6 +34,7 @@ interface TrackerContextValue {
     endingIn1Day: number
     openFollowUps: number
     recentlyJoined: number
+    enabledNotificationRules: number
   }
   lastImportSummary: CsvImportSummary | null
   addFreelancer: (input: NewFreelancerInput) => { success: boolean; message: string }
@@ -24,6 +43,10 @@ interface TrackerContextValue {
   removeProject: (id: string) => void
   addAllocation: (input: NewAllocationInput) => { success: boolean; message: string }
   removeAllocation: (id: string) => void
+  addNotificationRule: (input: NewNotificationRuleInput) => { success: boolean; message: string }
+  updateNotificationRule: (id: string, input: NewNotificationRuleInput) => { success: boolean; message: string }
+  removeNotificationRule: (id: string) => void
+  toggleNotificationRule: (id: string) => void
   importCsvFile: (file: File) => Promise<CsvImportSummary>
   getFreelancerById: (id: string) => Freelancer | undefined
   getProjectById: (id: string) => Project | undefined
@@ -36,32 +59,30 @@ interface TrackerStore {
   projects: Project[]
   allocations: Allocation[]
   notifications: AppNotification[]
+  notificationRules: NotificationRule[]
   lastImportSummary: CsvImportSummary | null
 }
 
 const STORAGE_KEY = 'freelancer-tracker-store-v2'
-
 const TrackerContext = createContext<TrackerContextValue | null>(null)
 
 export function TrackerProvider({ children }: PropsWithChildren) {
   const [store, setStore] = useState<TrackerStore>(() => {
-    if (typeof window === 'undefined') {
-      return getSeedStore()
-    }
+    const seed = getSeedStore()
+    if (typeof window === 'undefined') return seed
 
     const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (!saved) {
-      return getSeedStore()
-    }
+    if (!saved) return seed
 
     try {
-      return JSON.parse(saved) as TrackerStore
+      return ensureStoreShape(JSON.parse(saved), seed)
     } catch {
-      return getSeedStore()
+      return seed
     }
   })
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
   }, [store])
 
@@ -69,31 +90,34 @@ export function TrackerProvider({ children }: PropsWithChildren) {
   const projectMap = useMemo(() => new Map(store.projects.map((item) => [item.id, item])), [store.projects])
 
   const enrichedAllocations = useMemo(
-    () => store.allocations
-      .map((allocation) => {
-        const freelancer = freelancerMap.get(allocation.freelancerId)
-        const project = projectMap.get(allocation.projectId)
-        if (!freelancer || !project) {
-          return null
-        }
-        return {
-          ...allocation,
-          freelancer,
-          project,
-          daysRemaining: daysUntil(allocation.contractEndDate),
-        }
-      })
-      .filter((item): item is Allocation & { freelancer: Freelancer; project: Project; daysRemaining: number } => Boolean(item)),
+    () =>
+      store.allocations
+        .map((allocation) => {
+          const freelancer = freelancerMap.get(allocation.freelancerId)
+          const project = projectMap.get(allocation.projectId)
+          if (!freelancer || !project) return null
+          return {
+            ...allocation,
+            freelancer,
+            project,
+            daysRemaining: daysUntil(allocation.contractEndDate),
+          }
+        })
+        .filter((item): item is Allocation & { freelancer: Freelancer; project: Project; daysRemaining: number } => Boolean(item)),
     [store.allocations, freelancerMap, projectMap],
   )
 
-  const dashboard = useMemo(() => ({
-    activeFreelancers: store.freelancers.filter((item) => item.freelancerStatus !== 'Inactive').length,
-    endingIn3Days: enrichedAllocations.filter((item) => item.daysRemaining <= 3 && item.daysRemaining >= 0 && item.allocationStatus !== 'Closed').length,
-    endingIn1Day: enrichedAllocations.filter((item) => item.daysRemaining <= 1 && item.daysRemaining >= 0 && item.allocationStatus !== 'Closed').length,
-    openFollowUps: store.freelancers.filter((item) => item.freelancerStatus === 'Open follow-up').length,
-    recentlyJoined: store.freelancers.filter((item) => daysUntil(item.createdAt) >= -7).length,
-  }), [enrichedAllocations, store.freelancers])
+  const dashboard = useMemo(
+    () => ({
+      activeFreelancers: store.freelancers.filter((item) => item.freelancerStatus !== 'Inactive').length,
+      endingIn3Days: enrichedAllocations.filter((item) => item.daysRemaining <= 3 && item.daysRemaining >= 0 && item.allocationStatus !== 'Closed').length,
+      endingIn1Day: enrichedAllocations.filter((item) => item.daysRemaining <= 1 && item.daysRemaining >= 0 && item.allocationStatus !== 'Closed').length,
+      openFollowUps: store.freelancers.filter((item) => item.freelancerStatus === 'Open follow-up').length,
+      recentlyJoined: store.freelancers.filter((item) => daysUntil(item.createdAt) >= -7).length,
+      enabledNotificationRules: store.notificationRules.filter((item) => item.enabled).length,
+    }),
+    [enrichedAllocations, store.freelancers, store.notificationRules],
+  )
 
   const value: TrackerContextValue = {
     ...store,
@@ -102,9 +126,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     addFreelancer: (input) => {
       const key = normalizeFreelancerKey(input.freelancerName, input.personalEmail)
       const existing = store.freelancers.find((item) => normalizeFreelancerKey(item.freelancerName, item.personalEmail) === key)
-      if (existing) {
-        return { success: false, message: 'Freelancer already exists.' }
-      }
+      if (existing) return { success: false, message: 'Freelancer already exists.' }
 
       const freelancer: Freelancer = {
         id: makeId('freelancer'),
@@ -129,9 +151,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     addProject: (input) => {
       const key = normalizeProjectKey(input.projectName, input.entity)
       const existing = store.projects.find((item) => normalizeProjectKey(item.projectName, item.entity) === key)
-      if (existing) {
-        return { success: false, message: 'Project already exists.' }
-      }
+      if (existing) return { success: false, message: 'Project already exists.' }
 
       const project: Project = {
         id: makeId('project'),
@@ -159,11 +179,11 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         return { success: false, message: 'Project or freelancer not found.' }
       }
 
-      const existing = store.allocations.find((item) =>
-        normalizeAllocationKey(item.freelancerId, item.projectId, item.contractStartDate, item.contractEndDate, item.roleWithinProject) ===
-        normalizeAllocationKey(input.freelancerId, input.projectId, input.contractStartDate, input.contractEndDate, input.roleWithinProject),
+      const existing = store.allocations.find(
+        (item) =>
+          normalizeAllocationKey(item.freelancerId, item.projectId, item.contractStartDate, item.contractEndDate, item.roleWithinProject) ===
+          normalizeAllocationKey(input.freelancerId, input.projectId, input.contractStartDate, input.contractEndDate, input.roleWithinProject),
       )
-
       if (existing) {
         return { success: false, message: 'That freelancer is already assigned to this project for the same dates and role.' }
       }
@@ -174,6 +194,22 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         ...input,
       }
 
+      const joinRule = store.notificationRules.find((rule) => rule.triggerType === 'join' && rule.enabled)
+      const rendered = joinRule
+        ? renderNotificationRule(joinRule, { freelancer, project, allocation })
+        : {
+            subject: `Freelancer joined ${project.projectName}`,
+            body: `${freelancer.freelancerName} joined ${project.projectName}.`,
+            recipientsPreview: resolveRecipientPreview(
+              {
+                recipientTypes: ['Owner manager', 'Ops'],
+                customRecipients: '',
+              },
+              project,
+              allocation,
+            ),
+          }
+
       const notification: AppNotification = {
         id: makeId('notification'),
         allocationId: allocation.id,
@@ -181,7 +217,9 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         scheduledFor: new Date().toISOString(),
         sentAt: new Date().toISOString(),
         status: 'sent',
-        message: `${freelancer.freelancerName} joined ${project.projectName}.`,
+        subject: rendered.subject,
+        message: rendered.body,
+        recipientsPreview: rendered.recipientsPreview,
       }
 
       setStore((current) => ({
@@ -197,6 +235,35 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         ...current,
         allocations: current.allocations.filter((item) => item.id !== id),
         notifications: current.notifications.filter((item) => item.allocationId !== id),
+      }))
+    },
+    addNotificationRule: (input) => {
+      const rule: NotificationRule = { id: makeId('rule'), ...input }
+      setStore((current) => ({
+        ...current,
+        notificationRules: [rule, ...current.notificationRules],
+      }))
+      return { success: true, message: 'Notification rule created.' }
+    },
+    updateNotificationRule: (id, input) => {
+      setStore((current) => ({
+        ...current,
+        notificationRules: current.notificationRules.map((item) => (item.id === id ? { ...item, ...input } : item)),
+      }))
+      return { success: true, message: 'Notification rule updated.' }
+    },
+    removeNotificationRule: (id) => {
+      setStore((current) => ({
+        ...current,
+        notificationRules: current.notificationRules.filter((item) => item.id !== id),
+      }))
+    },
+    toggleNotificationRule: (id) => {
+      setStore((current) => ({
+        ...current,
+        notificationRules: current.notificationRules.map((item) =>
+          item.id === id ? { ...item, enabled: !item.enabled } : item,
+        ),
       }))
     },
     importCsvFile: async (file) => {
@@ -227,7 +294,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
             continue
           }
 
-          const freelancerKey = normalizeFreelancerKey(row.freelancerName, row.personalEmail)
+          const freelancerKey = normalizeFreelancerKey(row.freelancerName, row.personalEmail ?? '')
           let freelancer = nextFreelancers.find((item) => normalizeFreelancerKey(item.freelancerName, item.personalEmail) === freelancerKey)
           if (!freelancer) {
             freelancer = {
@@ -253,18 +320,16 @@ export function TrackerProvider({ children }: PropsWithChildren) {
             freelancer.registrationNumber = row.registrationNumber ?? freelancer.registrationNumber
             freelancer.questionFlag = row.questionFlag ?? freelancer.questionFlag
             freelancer.comments = row.comments || freelancer.comments
-            if (JSON.stringify(freelancer) !== before) {
-              summary.updatedFreelancers += 1
-            }
+            if (JSON.stringify(freelancer) !== before) summary.updatedFreelancers += 1
           }
 
-          const projectKey = normalizeProjectKey(row.projectName, row.entity ?? 'Squadigital UK')
+          const projectKey = normalizeProjectKey(row.projectName, row.entity ?? 'Unspecified')
           let project = nextProjects.find((item) => normalizeProjectKey(item.projectName, item.entity) === projectKey)
           if (!project) {
             project = {
               id: makeId('project'),
               projectName: row.projectName,
-              entity: row.entity ?? 'Squadigital UK',
+              entity: row.entity ?? 'Unspecified',
               projectManagerName: row.projectManagerName ?? '',
               projectManagerEmail: row.projectManagerEmail ?? '',
             }
@@ -274,17 +339,15 @@ export function TrackerProvider({ children }: PropsWithChildren) {
             const before = JSON.stringify(project)
             project.projectManagerName = row.projectManagerName || project.projectManagerName
             project.projectManagerEmail = row.projectManagerEmail || project.projectManagerEmail
-            if (JSON.stringify(project) !== before) {
-              summary.updatedProjects += 1
-            }
+            if (JSON.stringify(project) !== before) summary.updatedProjects += 1
           }
 
-          const duplicate = nextAllocations.find((item) =>
-            (row.id && item.sourceRowId === row.id) ||
-            normalizeAllocationKey(item.freelancerId, item.projectId, item.contractStartDate, item.contractEndDate, item.roleWithinProject) ===
-              normalizeAllocationKey(freelancer.id, project.id, row.contractStartDate, row.contractEndDate, row.roleWithinProject),
+          const duplicate = nextAllocations.find(
+            (item) =>
+              (row.id && item.sourceRowId === row.id) ||
+              normalizeAllocationKey(item.freelancerId, item.projectId, item.contractStartDate, item.contractEndDate, item.roleWithinProject) ===
+                normalizeAllocationKey(freelancer.id, project.id, row.contractStartDate, row.contractEndDate, row.roleWithinProject),
           )
-
           if (duplicate) {
             summary.skippedAllocations += 1
             continue
@@ -332,9 +395,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
 
 export function useTrackerData() {
   const context = useContext(TrackerContext)
-  if (!context) {
-    throw new Error('useTrackerData must be used within a TrackerProvider')
-  }
+  if (!context) throw new Error('useTrackerData must be used within a TrackerProvider')
   return context
 }
 
@@ -344,10 +405,21 @@ function getSeedStore(): TrackerStore {
     projects: seedProjects,
     allocations: seedAllocations,
     notifications: seedNotifications,
+    notificationRules: seedNotificationRules,
     lastImportSummary: null,
   }
 }
 
+function ensureStoreShape(value: Partial<TrackerStore>, seed: TrackerStore): TrackerStore {
+  return {
+    freelancers: value.freelancers ?? seed.freelancers,
+    projects: value.projects ?? seed.projects,
+    allocations: value.allocations ?? seed.allocations,
+    notifications: value.notifications ?? seed.notifications,
+    notificationRules: value.notificationRules ?? seed.notificationRules,
+    lastImportSummary: value.lastImportSummary ?? null,
+  }
+}
 
 function decodeCsvBuffer(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
@@ -378,4 +450,53 @@ function normalizeAllocationKey(
 
 function makeId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function resolveRecipientPreview(
+  rule: Pick<NotificationRule, 'recipientTypes' | 'customRecipients'>,
+  project: Project,
+  allocation: Allocation,
+): string[] {
+  const recipients = new Set<string>()
+  for (const recipient of rule.recipientTypes) {
+    if (recipient === 'Owner manager' && allocation.ownerManagerEmail) recipients.add(allocation.ownerManagerEmail)
+    if (recipient === 'Project manager' && project.projectManagerEmail) recipients.add(project.projectManagerEmail)
+    if (recipient === 'Ops') recipients.add('ops@squadigital.com')
+    if (recipient === 'Finance') recipients.add('finance@squadigital.com')
+    if (recipient === 'Custom recipients') {
+      splitRecipients(rule.customRecipients).forEach((item) => recipients.add(item))
+    }
+  }
+  return Array.from(recipients)
+}
+
+function renderNotificationRule(
+  rule: NotificationRule,
+  params: { freelancer: Freelancer; project: Project; allocation: Allocation },
+): { subject: string; body: string; recipientsPreview: string[] } {
+  const tokens: Record<string, string> = {
+    freelancerName: params.freelancer.freelancerName,
+    projectName: params.project.projectName,
+    entity: params.project.entity,
+    managerName: params.allocation.ownerManagerName || params.project.projectManagerName,
+    startDate: params.allocation.contractStartDate,
+    endDate: params.allocation.contractEndDate,
+    role: params.allocation.roleWithinProject,
+  }
+  return {
+    subject: renderTemplate(rule.subject, tokens),
+    body: renderTemplate(rule.body, tokens),
+    recipientsPreview: resolveRecipientPreview(rule, params.project, params.allocation),
+  }
+}
+
+function renderTemplate(value: string, tokens: Record<string, string>): string {
+  return value.replace(/{{\s*([a-zA-Z0-9]+)\s*}}/g, (_, key: string) => tokens[key] ?? '')
+}
+
+function splitRecipients(value: string): string[] {
+  return value
+    .split(/[;,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
 }

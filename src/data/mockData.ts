@@ -1,4 +1,4 @@
-import type { Allocation, AppNotification, Freelancer, Project } from '../types'
+import type { Allocation, AppNotification, Freelancer, NotificationRule, Project } from '../types'
 
 export const freelancers: Freelancer[] = [
   {
@@ -11,7 +11,7 @@ export const freelancers: Freelancer[] = [
     freelancerStatus: 'Active',
     registrationNumber: true,
     questionFlag: false,
-    comments: 'Strong frontend profile. Likely extension on current workstream.'
+    comments: 'Strong frontend profile. Likely extension on current workstream.',
   },
   {
     id: 'freelancer-2',
@@ -23,7 +23,7 @@ export const freelancers: Freelancer[] = [
     freelancerStatus: 'Ending soon',
     registrationNumber: true,
     questionFlag: true,
-    comments: 'Project likely closing this week; finance should check final dates.'
+    comments: 'Project likely closing this week; finance should check final dates.',
   },
   {
     id: 'freelancer-3',
@@ -35,8 +35,8 @@ export const freelancers: Freelancer[] = [
     freelancerStatus: 'Open follow-up',
     registrationNumber: false,
     questionFlag: true,
-    comments: 'Extension verbally agreed but status not yet closed in source form.'
-  }
+    comments: 'Extension verbally agreed but status not yet closed in source form.',
+  },
 ]
 
 export const projects: Project[] = [
@@ -45,22 +45,22 @@ export const projects: Project[] = [
     projectName: 'Retail Transformation',
     entity: 'Squadigital FR',
     projectManagerName: 'Amelie Laurent',
-    projectManagerEmail: 'amelie.laurent@squadigital.com'
+    projectManagerEmail: 'amelie.laurent@squadigital.com',
   },
   {
     id: 'project-2',
     projectName: 'AI Operating Model',
     entity: 'Squadigital UK',
     projectManagerName: 'Tom Hughes',
-    projectManagerEmail: 'tom.hughes@squadigital.com'
+    projectManagerEmail: 'tom.hughes@squadigital.com',
   },
   {
     id: 'project-3',
     projectName: 'Marketplace Redesign',
     entity: 'Squadigital GE',
     projectManagerName: 'Nina Becker',
-    projectManagerEmail: 'nina.becker@squadigital.com'
-  }
+    projectManagerEmail: 'nina.becker@squadigital.com',
+  },
 ]
 
 export const allocations: Allocation[] = [
@@ -78,7 +78,7 @@ export const allocations: Allocation[] = [
     roleWithinProject: 'Senior Product Designer',
     ownerManagerName: 'Amelie Laurent',
     ownerManagerEmail: 'amelie.laurent@squadigital.com',
-    allocationStatus: 'Active'
+    allocationStatus: 'Active',
   },
   {
     id: 'allocation-2',
@@ -94,7 +94,7 @@ export const allocations: Allocation[] = [
     roleWithinProject: 'Data Architect',
     ownerManagerName: 'Tom Hughes',
     ownerManagerEmail: 'tom.hughes@squadigital.com',
-    allocationStatus: 'Active'
+    allocationStatus: 'Active',
   },
   {
     id: 'allocation-3',
@@ -110,7 +110,7 @@ export const allocations: Allocation[] = [
     roleWithinProject: 'UX Research Lead',
     ownerManagerName: 'Nina Becker',
     ownerManagerEmail: 'nina.becker@squadigital.com',
-    allocationStatus: 'Extended pending close'
+    allocationStatus: 'Extended pending close',
   },
   {
     id: 'allocation-4',
@@ -126,8 +126,8 @@ export const allocations: Allocation[] = [
     roleWithinProject: 'Design Sprint Support',
     ownerManagerName: 'Tom Hughes',
     ownerManagerEmail: 'tom.hughes@squadigital.com',
-    allocationStatus: 'Active'
-  }
+    allocationStatus: 'Active',
+  },
 ]
 
 export const notifications: AppNotification[] = [
@@ -138,7 +138,9 @@ export const notifications: AppNotification[] = [
     scheduledFor: '2026-05-01T09:01:00Z',
     sentAt: '2026-05-01T09:01:00Z',
     status: 'sent',
-    message: 'Sophie Martin joined Retail Transformation.'
+    subject: 'Freelancer joined Retail Transformation',
+    message: 'Sophie Martin joined Retail Transformation and is ready for onboarding.',
+    recipientsPreview: ['owner manager', 'ops@squadigital.com'],
   },
   {
     id: 'notification-2',
@@ -146,7 +148,9 @@ export const notifications: AppNotification[] = [
     notificationType: 'end_1_day',
     scheduledFor: '2026-05-07T08:00:00Z',
     status: 'queued',
-    message: 'James Carter ends tomorrow on AI Operating Model.'
+    subject: 'Freelancer ending tomorrow',
+    message: 'James Carter ends tomorrow on AI Operating Model.',
+    recipientsPreview: ['project manager', 'finance@squadigital.com'],
   },
   {
     id: 'notification-3',
@@ -154,6 +158,59 @@ export const notifications: AppNotification[] = [
     notificationType: 'still_open_weekly',
     scheduledFor: '2026-05-07T08:00:00Z',
     status: 'queued',
-    message: 'Lena Vogel remains open with an extension still not closed.'
-  }
+    subject: 'Still-open follow-up reminder',
+    message: 'Lena Vogel remains open with an extension still not closed.',
+    recipientsPreview: ['owner manager', 'ops@squadigital.com'],
+  },
+]
+
+export const notificationRules: NotificationRule[] = [
+  {
+    id: 'rule-join',
+    name: 'New freelancer joins a project',
+    description: 'Send an onboarding heads-up as soon as a freelancer is assigned.',
+    triggerType: 'join',
+    cadence: 'Immediate',
+    recipientTypes: ['Owner manager', 'Ops'],
+    customRecipients: '',
+    subject: 'Freelancer joined {{projectName}}',
+    body: 'Hi team,\n\n{{freelancerName}} has been assigned to {{projectName}} for {{entity}} starting {{startDate}}. Owner: {{managerName}}.\n\nPlease complete any remaining onboarding checks.',
+    enabled: true,
+  },
+  {
+    id: 'rule-end-3',
+    name: 'Contract ending in 3 days',
+    description: 'Warn the project owner and finance before the end date is reached.',
+    triggerType: 'end_3_days',
+    cadence: 'Daily digest',
+    recipientTypes: ['Owner manager', 'Finance'],
+    customRecipients: '',
+    subject: 'Freelancer ending in 3 days: {{freelancerName}}',
+    body: 'Heads up — {{freelancerName}} is scheduled to roll off {{projectName}} on {{endDate}}. Please confirm whether this contract is ending or extending.',
+    enabled: true,
+  },
+  {
+    id: 'rule-end-1',
+    name: 'Contract ending tomorrow',
+    description: 'Escalate the last-day reminder to keep closure actions from slipping.',
+    triggerType: 'end_1_day',
+    cadence: 'Daily digest',
+    recipientTypes: ['Owner manager', 'Ops', 'Finance'],
+    customRecipients: '',
+    subject: 'Freelancer ending tomorrow: {{freelancerName}}',
+    body: 'Reminder: {{freelancerName}} ends on {{projectName}} tomorrow ({{endDate}}). If an extension is expected, please update the tracker immediately.',
+    enabled: true,
+  },
+  {
+    id: 'rule-still-open',
+    name: 'Still-open weekly follow-up',
+    description: 'Weekly reminder when a freelancer remains open and needs a decision.',
+    triggerType: 'still_open_weekly',
+    cadence: 'Weekly digest',
+    recipientTypes: ['Owner manager', 'Ops'],
+    customRecipients: '',
+    subject: 'Still-open freelancer follow-up: {{freelancerName}}',
+    body: 'Weekly reminder: {{freelancerName}} is still marked open on {{projectName}}. Please close or extend the allocation.',
+    enabled: true,
+  },
 ]

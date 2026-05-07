@@ -27,7 +27,7 @@ export function FreelancerDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link to="/freelancers" className="text-sm text-brand-300 hover:text-brand-200">â† Back to freelancers</Link>
+          <Link to="/freelancers" className="text-sm text-brand-300 hover:text-brand-200">← Back to freelancers</Link>
           <h2 className="mt-2 text-3xl font-semibold text-white">{freelancer.freelancerName}</h2>
           <p className="mt-2 text-sm text-slate-400">Manual edits and CSV imports stay in local browser storage until real persistence is wired.</p>
         </div>
@@ -54,7 +54,7 @@ export function FreelancerDetailPage() {
                     <tr key={allocation.id}>
                       <td className="py-3 pr-4 text-white">{project?.projectName ?? 'Unknown project'}</td>
                       <td className="py-3 pr-4 text-slate-300">{allocation.roleWithinProject}</td>
-                      <td className="py-3 pr-4 text-slate-300">{formatDate(allocation.contractStartDate)} â†’ {formatDate(allocation.contractEndDate)}</td>
+                      <td className="py-3 pr-4 text-slate-300">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</td>
                       <td className="py-3 pr-4 text-slate-300">{formatMoney(allocation.dailyRate, allocation.dailyRateCurrency)}</td>
                       <td className="py-3 pr-4"><StatusBadge value={allocation.allocationStatus} /></td>
                     </tr>
@@ -90,7 +90,7 @@ export function FreelancerDetailPage() {
               </div>
               <div>
                 <dt className="text-slate-500">Comments</dt>
-                <dd className="text-slate-200">{freelancer.comments || 'â€”'}</dd>
+                <dd className="text-slate-200">{freelancer.comments || '—'}</dd>
               </div>
             </dl>
           </Panel>

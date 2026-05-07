@@ -4,6 +4,10 @@ export type Entity = 'Squadigital FR' | 'Squadigital UK' | 'Squadigital GE' | 'J
 
 export type AllocationStatus = 'Active' | 'Extended pending close' | 'Closed'
 
+export type NotificationTrigger = 'join' | 'end_3_days' | 'end_1_day' | 'still_open_weekly' | 'custom'
+export type NotificationCadence = 'Immediate' | 'Daily digest' | 'Weekly digest' | 'Manual review'
+export type NotificationRecipient = 'Owner manager' | 'Project manager' | 'Ops' | 'Finance' | 'Custom recipients'
+
 export interface Freelancer {
   id: string
   createdAt: string
@@ -46,11 +50,26 @@ export interface Allocation {
 export interface AppNotification {
   id: string
   allocationId: string
-  notificationType: 'join' | 'end_3_days' | 'end_1_day' | 'still_open_weekly'
+  notificationType: NotificationTrigger
   scheduledFor: string
   sentAt?: string
   status: 'queued' | 'sent'
+  subject?: string
   message: string
+  recipientsPreview?: string[]
+}
+
+export interface NotificationRule {
+  id: string
+  name: string
+  description: string
+  triggerType: NotificationTrigger
+  cadence: NotificationCadence
+  recipientTypes: NotificationRecipient[]
+  customRecipients: string
+  subject: string
+  body: string
+  enabled: boolean
 }
 
 export interface CsvImportSummary {
@@ -98,3 +117,5 @@ export interface NewAllocationInput {
   ownerManagerEmail: string
   allocationStatus: AllocationStatus
 }
+
+export type NewNotificationRuleInput = Omit<NotificationRule, 'id'>

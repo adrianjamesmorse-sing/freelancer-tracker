@@ -4,10 +4,11 @@ import { Modal } from '../components/Modal'
 import { Panel } from '../components/Panel'
 import { StatusBadge } from '../components/StatusBadge'
 import { useTrackerData } from '../hooks/useTrackerData'
+import { COUNTRY_OPTIONS } from '../lib/countries'
 import { formatDate } from '../lib/format'
 import type { Freelancer, FreelancerStatus, NewFreelancerInput } from '../types'
 
-type SortKey = 'freelancerName' | 'freelancerStatus' | 'owner' | 'projectCount' | 'nextEndDate' | 'personalEmail'
+type SortKey = 'freelancerName' | 'freelancerStatus' | 'owner' | 'projectCount' | 'nextEndDate' | 'personalEmail' | 'country'
 type SortDirection = 'asc' | 'desc'
 
 interface FreelancerRow {
@@ -23,6 +24,7 @@ const initialForm: NewFreelancerInput = {
   personalEmail: '',
   phoneNumber: '',
   address: '',
+  country: '',
   freelancerStatus: 'Active',
   registrationNumber: false,
   questionFlag: false,
@@ -30,10 +32,11 @@ const initialForm: NewFreelancerInput = {
 }
 
 export function FreelancersPage() {
-  const { freelancers, getAllocationsForFreelancer, getProjectById, addFreelancer, removeFreelancer } = useTrackerData()
+  const { freelancers, getAllocationsForFreelancer, getProjectById, addFreelancer, updateFreelancer, removeFreelancer } = useTrackerData()
   const [form, setForm] = useState<NewFreelancerInput>(initialForm)
   const [message, setMessage] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingFreelancer, setEditingFreelancer] = useState<Freelancer | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | FreelancerStatus>('All')
   const [sortKey, setSortKey] = useState<SortKey>('freelancerName')
@@ -59,6 +62,7 @@ export function FreelancersPage() {
       const matchesSearch = !searchValue || [
         row.freelancer.freelancerName,
         row.freelancer.personalEmail,
+        row.freelancer.country,
         row.owner,
         row.entity,
       ].join(' ').toLowerCase().includes(searchValue)
@@ -79,12 +83,39 @@ export function FreelancersPage() {
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const result = addFreelancer(form)
+    const result = editingFreelancer
+      ? updateFreelancer(editingFreelancer.id, form)
+      : addFreelancer(form)
     setMessage(result.message)
     if (result.success) {
       setForm(initialForm)
+      setEditingFreelancer(null)
       setIsModalOpen(false)
     }
+  }
+
+  const openCreateModal = () => {
+    setMessage('')
+    setEditingFreelancer(null)
+    setForm(initialForm)
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (freelancer: Freelancer) => {
+    setMessage('')
+    setEditingFreelancer(freelancer)
+    setForm({
+      freelancerName: freelancer.freelancerName,
+      personalEmail: freelancer.personalEmail,
+      phoneNumber: freelancer.phoneNumber,
+      address: freelancer.address,
+      country: freelancer.country,
+      freelancerStatus: freelancer.freelancerStatus,
+      registrationNumber: freelancer.registrationNumber,
+      questionFlag: freelancer.questionFlag,
+      comments: freelancer.comments,
+    })
+    setIsModalOpen(true)
   }
 
   const toggleSort = (key: SortKey) => {
@@ -103,10 +134,7 @@ export function FreelancersPage() {
         action={
           <button
             className="inline-flex items-center gap-2 rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30"
-            onClick={() => {
-              setMessage('')
-              setIsModalOpen(true)
-            }}
+            onClick={openCreateModal}
             type="button"
           >
             <span aria-hidden="true">＋</span>
@@ -119,7 +147,7 @@ export function FreelancersPage() {
             <div className="flex flex-1 flex-col gap-3 sm:flex-row">
               <input
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white placeholder:text-slate-500 sm:max-w-sm"
-                placeholder="Search freelancer, email, owner, entity..."
+                placeholder="Search freelancer, email, country, owner, entity..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -140,11 +168,12 @@ export function FreelancersPage() {
 
           <div className="overflow-hidden rounded-2xl border border-slate-800">
             <div className="max-h-[68vh] overflow-auto">
-              <table className="min-w-[1100px] divide-y divide-slate-800 text-sm">
+              <table className="min-w-[1180px] divide-y divide-slate-800 text-sm">
                 <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur">
                   <tr className="text-left text-slate-400">
                     <SortableHeader label="Freelancer" active={sortKey === 'freelancerName'} direction={sortDirection} onClick={() => toggleSort('freelancerName')} />
                     <SortableHeader label="Status" active={sortKey === 'freelancerStatus'} direction={sortDirection} onClick={() => toggleSort('freelancerStatus')} />
+                    <SortableHeader label="Country" active={sortKey === 'country'} direction={sortDirection} onClick={() => toggleSort('country')} />
                     <SortableHeader label="Project owner" active={sortKey === 'owner'} direction={sortDirection} onClick={() => toggleSort('owner')} />
                     <SortableHeader label="Projects" active={sortKey === 'projectCount'} direction={sortDirection} onClick={() => toggleSort('projectCount')} />
                     <SortableHeader label="Next end" active={sortKey === 'nextEndDate'} direction={sortDirection} onClick={() => toggleSort('nextEndDate')} />
@@ -162,6 +191,7 @@ export function FreelancersPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3 align-top"><StatusBadge value={row.freelancer.freelancerStatus} /></td>
+                      <td className="px-4 py-3 align-top text-slate-300">{row.freelancer.country || '—'}</td>
                       <td className="px-4 py-3 align-top text-slate-300">{row.owner || '—'}</td>
                       <td className="px-4 py-3 align-top text-slate-300">{row.projectCount}</td>
                       <td className="px-4 py-3 align-top text-slate-300">{row.nextEndDate ? formatDate(row.nextEndDate) : '—'}</td>
@@ -170,17 +200,26 @@ export function FreelancersPage() {
                       </td>
                       <td className="px-4 py-3 align-top text-slate-400">{row.entity}</td>
                       <td className="px-4 py-3 align-top">
-                        <button
-                          className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
-                          onClick={() => {
-                            if (window.confirm(`Remove ${row.freelancer.freelancerName} and their related allocations?`)) {
-                              removeFreelancer(row.freelancer.id)
-                            }
-                          }}
-                          type="button"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-100 hover:border-brand-400/40 hover:text-white"
+                            onClick={() => openEditModal(row.freelancer)}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
+                            onClick={() => {
+                              if (window.confirm(`Remove ${row.freelancer.freelancerName} and their related allocations?`)) {
+                                removeFreelancer(row.freelancer.id)
+                              }
+                            }}
+                            type="button"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -193,14 +232,20 @@ export function FreelancersPage() {
 
       <Modal
         open={isModalOpen}
-        title="Add freelancer"
-        description="Create a freelancer manually without taking up permanent screen space."
-        onClose={() => setIsModalOpen(false)}
+        title={editingFreelancer ? `Edit ${editingFreelancer.freelancerName}` : 'Add freelancer'}
+        description={editingFreelancer ? 'Update the freelancer profile details.' : 'Create a freelancer manually without taking up permanent screen space.'}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingFreelancer(null)
+          setForm(initialForm)
+          setMessage('')
+        }}
       >
         <form className="space-y-4" onSubmit={submit}>
           <Input label="Freelancer name" value={form.freelancerName} onChange={(value) => setForm((current) => ({ ...current, freelancerName: value }))} required />
           <Input label="Personal email" type="email" value={form.personalEmail} onChange={(value) => setForm((current) => ({ ...current, personalEmail: value }))} required />
           <Input label="Phone number" value={form.phoneNumber} onChange={(value) => setForm((current) => ({ ...current, phoneNumber: value }))} />
+          <CountrySelect value={form.country} onChange={(value) => setForm((current) => ({ ...current, country: value }))} />
           <Input label="Address" value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
           <label className="block text-sm text-slate-300">
             <span className="mb-1 block">Status</span>
@@ -235,7 +280,7 @@ export function FreelancersPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {message ? <p className="text-sm text-slate-400">{message}</p> : <span />}
             <button className="rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30" type="submit">
-              Add freelancer
+              {editingFreelancer ? 'Save changes' : 'Add freelancer'}
             </button>
           </div>
         </form>
@@ -250,6 +295,8 @@ function getSortValue(row: FreelancerRow, key: SortKey) {
       return row.freelancer.freelancerName.toLowerCase()
     case 'freelancerStatus':
       return row.freelancer.freelancerStatus.toLowerCase()
+    case 'country':
+      return row.freelancer.country.toLowerCase()
     case 'owner':
       return row.owner.toLowerCase()
     case 'projectCount':
@@ -283,6 +330,24 @@ function Input({ label, value, onChange, type = 'text', required = false }: { la
         onChange={(event) => onChange(event.target.value)}
         required={required}
       />
+    </label>
+  )
+}
+
+function CountrySelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block text-sm text-slate-300">
+      <span className="mb-1 block">Country</span>
+      <select
+        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">Select a country</option>
+        {COUNTRY_OPTIONS.map((country) => (
+          <option key={country} value={country}>{country}</option>
+        ))}
+      </select>
     </label>
   )
 }

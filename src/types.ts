@@ -15,6 +15,7 @@ export interface Freelancer {
   personalEmail: string
   phoneNumber: string
   address: string
+  country: string
   freelancerStatus: FreelancerStatus
   registrationNumber: boolean
   questionFlag: boolean
@@ -90,6 +91,7 @@ export interface NewFreelancerInput {
   personalEmail: string
   phoneNumber: string
   address: string
+  country: string
   freelancerStatus: FreelancerStatus
   registrationNumber: boolean
   questionFlag: boolean

@@ -7,6 +7,7 @@ import {
   projects as seedProjects,
 } from '../data/mockData'
 import { mapCsvRows, normalizeKey } from '../lib/csv'
+import { inferCountryFromAddress } from '../lib/geo'
 import { daysUntil } from '../lib/format'
 import type {
   Allocation,
@@ -38,6 +39,7 @@ interface TrackerContextValue {
   }
   lastImportSummary: CsvImportSummary | null
   addFreelancer: (input: NewFreelancerInput) => { success: boolean; message: string }
+  updateFreelancer: (id: string, input: NewFreelancerInput) => { success: boolean; message: string }
   removeFreelancer: (id: string) => void
   addProject: (input: NewProjectInput) => { success: boolean; message: string }
   removeProject: (id: string) => void
@@ -124,18 +126,38 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     enrichedAllocations,
     dashboard,
     addFreelancer: (input) => {
-      const key = normalizeFreelancerKey(input.freelancerName, input.personalEmail)
+      const preparedInput = { ...input, country: input.country || inferCountryFromAddress(input.address) || '' }
+      const key = normalizeFreelancerKey(preparedInput.freelancerName, preparedInput.personalEmail)
       const existing = store.freelancers.find((item) => normalizeFreelancerKey(item.freelancerName, item.personalEmail) === key)
       if (existing) return { success: false, message: 'Freelancer already exists.' }
 
       const freelancer: Freelancer = {
         id: makeId('freelancer'),
         createdAt: new Date().toISOString(),
-        ...input,
+        ...preparedInput,
       }
 
       setStore((current) => ({ ...current, freelancers: [freelancer, ...current.freelancers] }))
       return { success: true, message: 'Freelancer added.' }
+    },
+    updateFreelancer: (id, input) => {
+      const preparedInput = { ...input, country: input.country || inferCountryFromAddress(input.address) || '' }
+      const key = normalizeFreelancerKey(preparedInput.freelancerName, preparedInput.personalEmail)
+      const duplicate = store.freelancers.find((item) => item.id !== id && normalizeFreelancerKey(item.freelancerName, item.personalEmail) === key)
+      if (duplicate) return { success: false, message: 'Another freelancer already uses that name/email combination.' }
+
+      setStore((current) => ({
+        ...current,
+        freelancers: current.freelancers.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...preparedInput,
+              }
+            : item,
+        ),
+      }))
+      return { success: true, message: 'Freelancer updated.' }
     },
     removeFreelancer: (id) => {
       setStore((current) => {
@@ -304,6 +326,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
               personalEmail: row.personalEmail ?? '',
               phoneNumber: row.phoneNumber ?? '',
               address: row.address ?? '',
+              country: row.country ?? inferCountryFromAddress(row.address) ?? '',
               freelancerStatus: row.freelancerStatus ?? 'Active',
               registrationNumber: row.registrationNumber ?? false,
               questionFlag: row.questionFlag ?? false,
@@ -316,6 +339,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
             freelancer.personalEmail = row.personalEmail || freelancer.personalEmail
             freelancer.phoneNumber = row.phoneNumber || freelancer.phoneNumber
             freelancer.address = row.address || freelancer.address
+            freelancer.country = row.country || inferCountryFromAddress(row.address) || freelancer.country
             freelancer.freelancerStatus = row.freelancerStatus || freelancer.freelancerStatus
             freelancer.registrationNumber = row.registrationNumber ?? freelancer.registrationNumber
             freelancer.questionFlag = row.questionFlag ?? freelancer.questionFlag
@@ -412,7 +436,10 @@ function getSeedStore(): TrackerStore {
 
 function ensureStoreShape(value: Partial<TrackerStore>, seed: TrackerStore): TrackerStore {
   return {
-    freelancers: value.freelancers ?? seed.freelancers,
+    freelancers: (value.freelancers ?? seed.freelancers).map((item) => ({
+      ...item,
+      country: item.country ?? inferCountryFromAddress(item.address) ?? '',
+    })),
     projects: value.projects ?? seed.projects,
     allocations: value.allocations ?? seed.allocations,
     notifications: value.notifications ?? seed.notifications,

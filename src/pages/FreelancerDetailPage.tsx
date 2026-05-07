@@ -77,8 +77,12 @@ export function FreelancerDetailPage() {
                 <dd className="text-slate-200">{freelancer.phoneNumber}</dd>
               </div>
               <div>
+                <dt className="text-slate-500">Country</dt>
+                <dd className="text-slate-200">{freelancer.country || '—'}</dd>
+              </div>
+              <div>
                 <dt className="text-slate-500">Address</dt>
-                <dd className="text-slate-200">{freelancer.address}</dd>
+                <dd className="text-slate-200">{freelancer.address || '—'}</dd>
               </div>
               <div>
                 <dt className="text-slate-500">Registration number</dt>

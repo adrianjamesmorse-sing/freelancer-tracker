@@ -1,3 +1,4 @@
+import { inferCountryFromAddress } from './geo'
 import type { Entity, FreelancerStatus } from '../types'
 
 export interface CsvRow {
@@ -19,6 +20,7 @@ export interface CsvRow {
   personalEmail?: string
   phoneNumber?: string
   address?: string
+  country?: string
   freelancerStatus?: FreelancerStatus
   questionFlag?: boolean
   comments?: string
@@ -160,6 +162,7 @@ export function mapCsvRows(text: string): CsvRow[] {
       mapped.personalEmail = cleanEmail(raw.personalEmail) || cleanEmail(raw.addressRaw)
       mapped.phoneNumber = raw.phoneNumber
       mapped.address = isLikelyAddress(raw.addressRaw) ? raw.addressRaw : undefined
+      mapped.country = inferCountryFromAddress(mapped.address) || undefined
       mapped.questionFlag = parseBoolean(raw.questionFlag)
       mapped.comments = cleanComment(raw.comments)
       mapped.freelancerStatus = deriveFreelancerStatus(mapped.contractEndDate, mapped.questionFlag)

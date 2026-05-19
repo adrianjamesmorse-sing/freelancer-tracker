@@ -1,11 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  Sphere,
-  ZoomableGroup,
-} from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Sphere, ZoomableGroup } from 'react-simple-maps'
 import type { CountryMapDatum } from '../lib/geo'
 import { getCountryLookupKeys, normalizeGeographyName } from '../lib/geo'
 import { Icon } from './Icon'
@@ -18,6 +12,7 @@ const MAX_ZOOM = 8
 
 interface WorldMapPanelProps {
   countries: CountryMapDatum[]
+  compact?: boolean
 }
 
 interface TooltipState {
@@ -26,7 +21,7 @@ interface TooltipState {
   y: number
 }
 
-export function WorldMapPanel({ countries }: WorldMapPanelProps) {
+export function WorldMapPanel({ countries, compact = false }: WorldMapPanelProps) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const [position, setPosition] = useState({ coordinates: DEFAULT_CENTER, zoom: DEFAULT_ZOOM })
   const mapFrameRef = useRef<HTMLDivElement | null>(null)
@@ -35,152 +30,83 @@ export function WorldMapPanel({ countries }: WorldMapPanelProps) {
     const map = new Map<string, CountryMapDatum>()
     countries.forEach((country) => {
       getCountryLookupKeys(country.country).forEach((key) => map.set(key, country))
-      map.set(normalizeGeographyName(country.mapCountryName), country)
     })
     return map
   }, [countries])
 
-  const handleZoomIn = () => {
-    setPosition((current) => ({ ...current, zoom: Math.min(current.zoom * 1.35, MAX_ZOOM) }))
-  }
-
-  const handleZoomOut = () => {
-    setPosition((current) => ({ ...current, zoom: Math.max(current.zoom / 1.35, MIN_ZOOM) }))
-  }
-
-  const handleReset = () => {
-    setPosition({ coordinates: DEFAULT_CENTER, zoom: DEFAULT_ZOOM })
-  }
-
-  const showTooltip = (event: React.MouseEvent<SVGPathElement>, country: CountryMapDatum | null) => {
-    if (!country || !mapFrameRef.current) {
-      setTooltip(null)
-      return
-    }
-
-    const bounds = mapFrameRef.current.getBoundingClientRect()
-    setTooltip({
-      country,
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    })
-  }
+  const totalCountries = countries.length
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(52,150,255,0.12),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.95),rgba(2,6,23,0.94))] p-4 sm:p-5">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <section className="overflow-hidden rounded-[28px] border border-stone-200 bg-[linear-gradient(180deg,#fffdfa,#f6f0e6)] shadow-panel backdrop-blur-sm">
+      <header className="flex flex-col gap-3 border-b border-stone-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <div>
-          <div className="text-sm font-medium text-white">Active freelancers by country</div>
-          <p className="mt-1 text-sm text-slate-400">
-            Only active freelancers with both a saved country and a saved address are shown here.
-          </p>
+          <h2 className="text-lg font-semibold tracking-tight text-stone-900">Active freelancers by country</h2>
+          <p className="mt-1 max-w-2xl text-sm text-stone-600">Countries are highlighted only when active freelancers have a usable address and mapped country.</p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-brand-400/15 bg-brand-500/10 px-3 py-1.5 text-xs text-brand-100">
-          <Icon name="globe" className="h-3.5 w-3.5" />
-          <span>Countries</span>
-          <span className="font-semibold text-white">{countries.length}</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/80 px-3 py-1.5 text-xs text-stone-700">
+          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-olive-600" />
+          Countries {totalCountries}
         </div>
-      </div>
+      </header>
 
-      <div ref={mapFrameRef} className="relative overflow-hidden rounded-[24px] border border-white/8 bg-slate-950/60 p-2 sm:p-3">
-        <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/85 p-1 shadow-xl backdrop-blur">
-          <MapControlButton label="Zoom in" onClick={handleZoomIn}>
-            <Icon name="plus" className="h-4 w-4" />
-          </MapControlButton>
-          <MapControlButton label="Zoom out" onClick={handleZoomOut}>
-            <Icon name="minus" className="h-4 w-4" />
-          </MapControlButton>
-          <MapControlButton label="Reset view" onClick={handleReset}>
-            <Icon name="globe" className="h-4 w-4" />
-          </MapControlButton>
-        </div>
-
-        {tooltip ? (
-          <div
-            className="pointer-events-none absolute z-20 min-w-[160px] rounded-2xl border border-white/10 bg-slate-950/92 px-3 py-2 text-xs shadow-xl backdrop-blur"
-            style={{
-              left: Math.min(tooltip.x + 12, (mapFrameRef.current?.clientWidth ?? tooltip.x) - 176),
-              top: Math.max(tooltip.y - 54, 16),
-            }}
-          >
-            <div className="font-semibold text-white">{tooltip.country.country}</div>
-            <div className="mt-1 text-slate-300">
-              {tooltip.country.count} active freelancer{tooltip.country.count > 1 ? 's' : ''}
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="rounded-[24px] border border-stone-200 bg-white/85 p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs uppercase tracking-[0.18em] text-stone-500">Europe-focused view</div>
+            <div className="flex items-center gap-2">
+              <MapControl icon="minus" label="Zoom out" onClick={() => setPosition((current) => ({ ...current, zoom: Math.max(MIN_ZOOM, +(current.zoom - 0.8).toFixed(2)) }))} />
+              <MapControl icon="plus" label="Zoom in" onClick={() => setPosition((current) => ({ ...current, zoom: Math.min(MAX_ZOOM, +(current.zoom + 0.8).toFixed(2)) }))} />
+              <button type="button" onClick={() => setPosition({ coordinates: DEFAULT_CENTER, zoom: DEFAULT_ZOOM })} className="inline-flex h-9 items-center rounded-xl border border-stone-200 bg-[#f8f3ea] px-3 text-xs font-medium text-stone-700 transition hover:border-stone-300 hover:bg-white">Reset</button>
             </div>
           </div>
-        ) : null}
 
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{ scale: 135 }}
-          className="h-[360px] w-full touch-pan-y lg:h-[500px]"
-        >
-          <ZoomableGroup
-            center={position.coordinates}
-            zoom={position.zoom}
-            minZoom={MIN_ZOOM}
-            maxZoom={MAX_ZOOM}
-            onMoveEnd={({ coordinates, zoom }) => setPosition({ coordinates, zoom })}
-          >
-            <Sphere fill="rgba(30,41,59,0.65)" stroke="rgba(148,163,184,0.18)" strokeWidth={0.5} />
-            <Geographies geography={geographyUrl}>
-              {({ geographies }) =>
-                geographies.map((geo) => {
-                  const geographyName =
-                    geo.properties?.name ?? geo.properties?.NAME ?? geo.properties?.admin ?? geo.properties?.ADMIN ?? ''
-                  const mappedCountry = countryMap.get(normalizeGeographyName(String(geographyName)))
-                  const isActive = Boolean(mappedCountry)
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={isActive ? 'rgba(96,165,250,0.95)' : 'rgba(71,85,105,0.5)'}
-                      stroke={isActive ? 'rgba(255,255,255,0.4)' : 'rgba(148,163,184,0.18)'}
-                      strokeWidth={isActive ? 0.7 : 0.35}
-                      onMouseEnter={(event) => showTooltip(event, mappedCountry ?? null)}
-                      onMouseMove={(event) => showTooltip(event, mappedCountry ?? null)}
-                      onMouseLeave={() => setTooltip(null)}
-                      style={{
-                        default: { outline: 'none' },
-                        hover: { fill: isActive ? 'rgba(129,191,255,1)' : 'rgba(96,165,250,0.2)', outline: 'none' },
-                        pressed: { outline: 'none' },
-                      }}
-                    />
-                  )
-                })
-              }
-            </Geographies>
-          </ZoomableGroup>
-        </ComposableMap>
-      </div>
+          <div ref={mapFrameRef} className="relative overflow-hidden rounded-[22px] border border-stone-200 bg-[radial-gradient(circle_at_top,rgba(127,142,108,0.08),transparent_34%),linear-gradient(180deg,#fffdfa_0%,#f7f2e9_100%)]">
+            <ComposableMap projection="geoMercator" projectionConfig={{ scale: compact ? 170 : 155 }} style={{ width: '100%', height: compact ? '430px' : '500px' }}>
+              <ZoomableGroup center={position.coordinates} zoom={position.zoom} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} onMoveEnd={({ coordinates, zoom }) => setPosition({ coordinates: coordinates as [number, number], zoom })}>
+                <Sphere stroke="#e5ddd0" strokeWidth={0.8} fill="#fbf8f1" />
+                <Geographies geography={geographyUrl}>
+                  {({ geographies }) => geographies.map((geography) => {
+                    const normalizedName = normalizeGeographyName(String(geography.properties?.name ?? ''))
+                    const match = countryMap.get(normalizedName)
+                    return (
+                      <Geography
+                        key={geography.rsmKey}
+                        geography={geography}
+                        onMouseMove={(event) => {
+                          if (!match || !mapFrameRef.current) return
+                          const bounds = mapFrameRef.current.getBoundingClientRect()
+                          setTooltip({ country: match, x: event.clientX - bounds.left + 14, y: event.clientY - bounds.top + 14 })
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
+                        style={{
+                          default: { fill: match ? '#8fa07c' : '#efe8db', stroke: '#d8cfbf', strokeWidth: 0.7, outline: 'none' },
+                          hover: { fill: match ? '#7c8e68' : '#e8dece', stroke: '#cdbfa8', strokeWidth: 0.9, outline: 'none' },
+                          pressed: { fill: match ? '#6f7f5d' : '#e3d7c6', stroke: '#bfae95', strokeWidth: 0.9, outline: 'none' },
+                        }}
+                      />
+                    )
+                  })}
+                </Geographies>
+              </ZoomableGroup>
+            </ComposableMap>
 
-      {!countries.length ? (
-        <div className="mt-4 rounded-2xl border border-amber-400/15 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          No active freelancers currently have both an address and a country saved, so the map is empty.
+            {tooltip ? (
+              <div className="pointer-events-none absolute z-10 rounded-2xl border border-stone-200 bg-white/95 px-3 py-2 text-xs text-stone-700 shadow-lg" style={{ left: tooltip.x, top: tooltip.y }}>
+                <div className="font-medium text-stone-900">{tooltip.country.country}</div>
+                <div className="mt-1">{tooltip.country.count} active freelancer{tooltip.country.count === 1 ? '' : 's'}</div>
+              </div>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-    </div>
+      </div>
+    </section>
   )
 }
 
-function MapControlButton({
-  label,
-  onClick,
-  children,
-}: {
-  label: string
-  onClick: () => void
-  children: ReactNode
-}) {
+function MapControl({ icon, label, onClick }: { icon: 'plus' | 'minus'; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition hover:border-brand-400/30 hover:bg-brand-500/15 hover:text-white"
-    >
-      {children}
+    <button type="button" aria-label={label} title={label} onClick={onClick} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-stone-200 bg-[#f8f3ea] text-stone-700 transition hover:border-stone-300 hover:bg-white">
+      <Icon name={icon} className="h-4 w-4" />
     </button>
   )
 }

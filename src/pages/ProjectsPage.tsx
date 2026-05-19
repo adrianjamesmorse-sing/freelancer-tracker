@@ -90,7 +90,7 @@ export function ProjectsPage() {
         title="All projects"
         action={
           <button
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30"
+            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]"
             onClick={() => {
               setMessage('')
               setIsModalOpen(true)
@@ -106,13 +106,13 @@ export function ProjectsPage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row">
               <input
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white placeholder:text-slate-500 sm:max-w-sm"
+                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 placeholder:text-stone-400 sm:max-w-sm"
                 placeholder="Search project, manager, entity..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
               <select
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white sm:w-56"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 sm:w-56"
                 value={entityFilter}
                 onChange={(event) => setEntityFilter(event.target.value as 'All' | Entity)}
               >
@@ -122,37 +122,37 @@ export function ProjectsPage() {
                 ))}
               </select>
             </div>
-            <div className="text-sm text-slate-400">{filteredRows.length} projects</div>
+            <div className="text-sm text-stone-500">{filteredRows.length} projects</div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-800">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white/85">
             <div className="max-h-[68vh] overflow-auto">
               <table className="min-w-[1080px] divide-y divide-slate-800 text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur">
-                  <tr className="text-left text-slate-400">
+                <thead className="sticky top-0 z-10 bg-[#f8f3ea]/95 backdrop-blur">
+                  <tr className="text-left text-stone-600">
                     <SortableHeader label="Project" active={sortKey === 'projectName'} direction={sortDirection} onClick={() => toggleSort('projectName')} />
                     <SortableHeader label="Entity" active={sortKey === 'entity'} direction={sortDirection} onClick={() => toggleSort('entity')} />
                     <SortableHeader label="Project manager" active={sortKey === 'projectManagerName'} direction={sortDirection} onClick={() => toggleSort('projectManagerName')} />
                     <SortableHeader label="Freelancers" active={sortKey === 'freelancerCount'} direction={sortDirection} onClick={() => toggleSort('freelancerCount')} />
                     <SortableHeader label="Date range" active={sortKey === 'dateRange'} direction={sortDirection} onClick={() => toggleSort('dateRange')} />
-                    <th className="sticky top-0 bg-slate-900/95 px-4 py-3 font-medium">Actions</th>
+                    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80">
                   {filteredRows.map((row) => (
-                    <tr key={row.project.id} className="hover:bg-slate-900/45">
+                    <tr key={row.project.id} className="hover:bg-[#fbf7ef]">
                       <td className="px-4 py-3 align-top">
-                        <Link to={`/projects/${row.project.id}`} className="font-medium text-white hover:text-brand-300">
+                        <Link to={`/projects/${row.project.id}`} className="font-medium text-stone-900 hover:text-brand-700">
                           {row.project.projectName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 align-top text-slate-300"><StatusBadge value={row.project.entity} /></td>
-                      <td className="px-4 py-3 align-top text-slate-300">
+                      <td className="px-4 py-3 align-top text-stone-700"><StatusBadge value={row.project.entity} /></td>
+                      <td className="px-4 py-3 align-top text-stone-700">
                         <div>{row.project.projectManagerName || '—'}</div>
-                        <div className="max-w-[280px] break-all text-xs text-slate-500">{row.project.projectManagerEmail || '—'}</div>
+                        <div className="max-w-[280px] break-all text-xs text-stone-500">{row.project.projectManagerEmail || '—'}</div>
                       </td>
-                      <td className="px-4 py-3 align-top text-slate-300">{row.freelancerCount}</td>
-                      <td className="px-4 py-3 align-top text-slate-300">
+                      <td className="px-4 py-3 align-top text-stone-700">{row.freelancerCount}</td>
+                      <td className="px-4 py-3 align-top text-stone-700">
                         {row.start && row.end ? `${formatDate(row.start)} → ${formatDate(row.end)}` : '—'}
                       </td>
                       <td className="px-4 py-3 align-top">
@@ -185,10 +185,10 @@ export function ProjectsPage() {
       >
         <form className="space-y-4" onSubmit={submit}>
           <Input label="Project name" value={form.projectName} onChange={(value) => setForm((current) => ({ ...current, projectName: value }))} required />
-          <label className="block text-sm text-slate-300">
+          <label className="block text-sm text-stone-700">
             <span className="mb-1 block">Entity</span>
             <select
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
               value={form.entity}
               onChange={(event) => setForm((current) => ({ ...current, entity: event.target.value as Entity }))}
             >
@@ -200,8 +200,8 @@ export function ProjectsPage() {
           <Input label="Project manager name" value={form.projectManagerName} onChange={(value) => setForm((current) => ({ ...current, projectManagerName: value }))} />
           <Input label="Project manager email" type="email" value={form.projectManagerEmail} onChange={(value) => setForm((current) => ({ ...current, projectManagerEmail: value }))} />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {message ? <p className="text-sm text-slate-400">{message}</p> : <span />}
-            <button className="rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30" type="submit">
+            {message ? <p className="text-sm text-stone-500">{message}</p> : <span />}
+            <button className="rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]" type="submit">
               Add project
             </button>
           </div>
@@ -228,10 +228,10 @@ function getSortValue(row: { project: { projectName: string; entity: string; pro
 
 function SortableHeader({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
   return (
-    <th className="sticky top-0 bg-slate-900/95 px-4 py-3 font-medium">
-      <button className="inline-flex items-center gap-2 text-left transition hover:text-white" onClick={onClick} type="button">
+    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">
+      <button className="inline-flex items-center gap-2 text-left transition hover:text-stone-900" onClick={onClick} type="button">
         <span>{label}</span>
-        <span className={active ? 'text-brand-300' : 'text-slate-600'}>{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+        <span className={active ? 'text-brand-700' : 'text-stone-400'}>{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
       </button>
     </th>
   )
@@ -239,10 +239,10 @@ function SortableHeader({ label, active, direction, onClick }: { label: string; 
 
 function Input({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
   return (
-    <label className="block text-sm text-slate-300">
+    <label className="block text-sm text-stone-700">
       <span className="mb-1 block">{label}</span>
       <input
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

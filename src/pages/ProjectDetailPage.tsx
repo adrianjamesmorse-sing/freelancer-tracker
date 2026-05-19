@@ -67,8 +67,8 @@ export function ProjectDetailPage() {
     <div className="space-y-6">
       <div>
         <Link to="/projects" className="text-sm text-brand-300 hover:text-brand-200">← Back to projects</Link>
-        <h2 className="mt-2 text-3xl font-semibold text-white">{project.projectName}</h2>
-        <p className="mt-2 text-sm text-slate-400">{project.entity} · {project.projectManagerName}</p>
+        <h2 className="mt-2 text-3xl font-semibold text-stone-900">{project.projectName}</h2>
+        <p className="mt-2 text-sm text-stone-500">{project.entity} · {project.projectManagerName}</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
@@ -76,7 +76,7 @@ export function ProjectDetailPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-800 text-sm">
               <thead>
-                <tr className="text-left text-slate-400">
+                <tr className="text-left text-stone-500">
                   <th className="pb-3 pr-4 font-medium">Freelancer</th>
                   <th className="pb-3 pr-4 font-medium">Role</th>
                   <th className="pb-3 pr-4 font-medium">Dates</th>
@@ -90,10 +90,10 @@ export function ProjectDetailPage() {
                   const freelancer = getFreelancerById(allocation.freelancerId)
                   return (
                     <tr key={allocation.id}>
-                      <td className="py-3 pr-4 text-white">{freelancer?.freelancerName ?? 'Unknown freelancer'}</td>
-                      <td className="py-3 pr-4 text-slate-300">{allocation.roleWithinProject}</td>
-                      <td className="py-3 pr-4 text-slate-300">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</td>
-                      <td className="py-3 pr-4 text-slate-300">{formatMoney(allocation.dailyRate, allocation.dailyRateCurrency)}</td>
+                      <td className="py-3 pr-4 text-stone-900">{freelancer?.freelancerName ?? 'Unknown freelancer'}</td>
+                      <td className="py-3 pr-4 text-stone-700">{allocation.roleWithinProject}</td>
+                      <td className="py-3 pr-4 text-stone-700">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</td>
+                      <td className="py-3 pr-4 text-stone-700">{formatMoney(allocation.dailyRate, allocation.dailyRateCurrency)}</td>
                       <td className="py-3 pr-4"><StatusBadge value={allocation.allocationStatus} /></td>
                       <td className="py-3 pr-4">
                         <button
@@ -117,10 +117,10 @@ export function ProjectDetailPage() {
 
         <Panel title="Add freelancer to project">
           <form className="space-y-4" onSubmit={submit}>
-            <label className="block text-sm text-slate-300">
+            <label className="block text-sm text-stone-700">
               <span className="mb-1 block">Freelancer</span>
               <select
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
                 value={form.freelancerId}
                 onChange={(event) => setForm((current) => ({ ...current, freelancerId: event.target.value }))}
                 required
@@ -141,10 +141,10 @@ export function ProjectDetailPage() {
               <Input label="Daily rate" type="number" value={String(form.dailyRate)} onChange={(value) => setForm((current) => ({ ...current, dailyRate: Number(value) || 0 }))} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-slate-300">
+              <label className="block text-sm text-stone-700">
                 <span className="mb-1 block">Currency</span>
                 <select
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
                   value={form.dailyRateCurrency}
                   onChange={(event) => setForm((current) => ({ ...current, dailyRateCurrency: event.target.value as 'EUR' | 'GBP' }))}
                 >
@@ -152,10 +152,10 @@ export function ProjectDetailPage() {
                   <option value="GBP">GBP</option>
                 </select>
               </label>
-              <label className="block text-sm text-slate-300">
+              <label className="block text-sm text-stone-700">
                 <span className="mb-1 block">Status</span>
                 <select
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
                   value={form.allocationStatus}
                   onChange={(event) => setForm((current) => ({ ...current, allocationStatus: event.target.value as NewAllocationInput['allocationStatus'] }))}
                 >
@@ -168,10 +168,10 @@ export function ProjectDetailPage() {
             <Input label="Daily rate note" value={form.dailyRateNote} onChange={(value) => setForm((current) => ({ ...current, dailyRateNote: value }))} />
             <Input label="Owner manager name" value={form.ownerManagerName} onChange={(value) => setForm((current) => ({ ...current, ownerManagerName: value }))} />
             <Input label="Owner manager email" type="email" value={form.ownerManagerEmail} onChange={(value) => setForm((current) => ({ ...current, ownerManagerEmail: value }))} />
-            <button className="rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white" type="submit">
+            <button className="rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-stone-900" type="submit">
               Add freelancer
             </button>
-            {message ? <p className="text-sm text-slate-400">{message}</p> : null}
+            {message ? <p className="text-sm text-stone-500">{message}</p> : null}
           </form>
         </Panel>
       </div>
@@ -181,10 +181,10 @@ export function ProjectDetailPage() {
 
 function Input({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
   return (
-    <label className="block text-sm text-slate-300">
+    <label className="block text-sm text-stone-700">
       <span className="mb-1 block">{label}</span>
       <input
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

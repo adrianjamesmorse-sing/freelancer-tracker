@@ -66,7 +66,7 @@ export function ImportsPage() {
               <InfoCard title="Allocations" body="Deduped by Forms row id or by matching freelancer, project, dates, and role." />
             </div>
 
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-brand-400/20 bg-brand-500/15 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-500/25">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-stone-300 bg-[#efe7da] px-4 py-2.5 text-sm font-medium text-stone-800 transition hover:bg-[#e6dccb]">
               <Icon name="upload" className="h-4 w-4" />
               <input className="hidden" type="file" accept=".csv,text/csv" onChange={onFileChange} disabled={isImporting} />
               {isImporting ? 'Importing...' : 'Choose CSV file'}
@@ -78,9 +78,9 @@ export function ImportsPage() {
               </div>
             ) : null}
 
-            <div className="rounded-[24px] border border-white/8 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Expected input</div>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+            <div className="rounded-[24px] border border-white/8 bg-white/85 p-4">
+              <div className="text-xs uppercase tracking-[0.16em] text-stone-500">Expected input</div>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-stone-700">
                 <li>• Semicolon-delimited Microsoft Forms CSV</li>
                 <li>• Windows-1252 encoding supported</li>
                 <li>• Real Forms columns already mapped to tracker fields</li>
@@ -116,7 +116,7 @@ export function ImportsPage() {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-[24px] border border-white/8 bg-white/5 p-5 text-sm text-slate-400">
+            <div className="rounded-[24px] border border-white/8 bg-white/85 p-5 text-sm text-stone-500">
               No CSV imported yet. Upload your Forms export to populate the tracker and review the summary here.
             </div>
           )}
@@ -128,8 +128,8 @@ export function ImportsPage() {
 
 function InfoCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{title}</div>
+    <div className="rounded-2xl border border-white/8 bg-white/85 p-4">
+      <div className="text-xs uppercase tracking-[0.16em] text-stone-500">{title}</div>
       <div className="mt-2 text-sm text-slate-200">{body}</div>
     </div>
   )
@@ -137,9 +137,9 @@ function InfoCard({ title, body }: { title: string; body: string }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-3.5">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-white">{value}</dd>
+    <div className="rounded-2xl border border-white/8 bg-white/85 p-3.5">
+      <dt className="text-stone-500">{label}</dt>
+      <dd className="mt-1 break-words text-stone-900">{value}</dd>
     </div>
   )
 }

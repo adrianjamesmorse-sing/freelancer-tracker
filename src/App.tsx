@@ -1,7 +1,10 @@
 import { Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { TrackerProvider } from './context/TrackerContext'
+import { AdminPage } from './pages/AdminPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { FeedbackManagerPage } from './pages/FeedbackManagerPage'
+import { FinancialsPage } from './pages/FinancialsPage'
 import { FreelancerDetailPage } from './pages/FreelancerDetailPage'
 import { FreelancersPage } from './pages/FreelancersPage'
 import { ImportsPage } from './pages/ImportsPage'
@@ -19,8 +22,11 @@ function App() {
           <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          <Route path="/financials" element={<FinancialsPage />} />
           <Route path="/imports" element={<ImportsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/feedback" element={<FeedbackManagerPage />} />
         </Routes>
       </Layout>
     </TrackerProvider>

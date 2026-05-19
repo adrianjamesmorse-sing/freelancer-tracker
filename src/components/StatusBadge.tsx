@@ -3,37 +3,37 @@ interface StatusBadgeProps {
 }
 
 const statusStyles: Record<string, string> = {
-  Active: 'bg-emerald-500/16 text-emerald-200 ring-emerald-400/20',
-  'Ending soon': 'bg-amber-500/16 text-amber-100 ring-amber-400/20',
-  'Open follow-up': 'bg-rose-500/16 text-rose-100 ring-rose-400/20',
-  Inactive: 'bg-slate-500/16 text-slate-200 ring-slate-400/20',
-  Closed: 'bg-slate-500/16 text-slate-200 ring-slate-400/20',
-  'Extended pending close': 'bg-fuchsia-500/16 text-fuchsia-100 ring-fuchsia-400/20',
-  sent: 'bg-emerald-500/16 text-emerald-200 ring-emerald-400/20',
-  queued: 'bg-amber-500/16 text-amber-100 ring-amber-400/20',
-  JV: 'bg-sky-500/16 text-sky-100 ring-sky-400/20',
-  Unspecified: 'bg-slate-500/16 text-slate-200 ring-slate-400/20',
-  'Squadigital FR': 'bg-blue-500/16 text-blue-100 ring-blue-400/20',
-  'Squadigital UK': 'bg-indigo-500/16 text-indigo-100 ring-indigo-400/20',
-  'Squadigital GE': 'bg-cyan-500/16 text-cyan-100 ring-cyan-400/20',
-  Immediate: 'bg-brand-500/16 text-brand-100 ring-brand-400/20',
-  'Daily digest': 'bg-violet-500/16 text-violet-100 ring-violet-400/20',
-  'Weekly digest': 'bg-fuchsia-500/16 text-fuchsia-100 ring-fuchsia-400/20',
-  'Manual review': 'bg-slate-500/16 text-slate-100 ring-slate-400/20',
-  Enabled: 'bg-emerald-500/16 text-emerald-100 ring-emerald-400/20',
-  Disabled: 'bg-slate-500/16 text-slate-100 ring-slate-400/20',
-  join: 'bg-brand-500/16 text-brand-100 ring-brand-400/20',
-  end_3_days: 'bg-amber-500/16 text-amber-100 ring-amber-400/20',
-  end_1_day: 'bg-rose-500/16 text-rose-100 ring-rose-400/20',
-  still_open_weekly: 'bg-fuchsia-500/16 text-fuchsia-100 ring-fuchsia-400/20',
-  custom: 'bg-slate-500/16 text-slate-100 ring-slate-400/20',
+  Active: 'bg-[#dfe9da] text-[#466043] ring-[#c7d7c1]',
+  'Ending soon': 'bg-[#f4e6cb] text-[#7f5a23] ring-[#e6d2aa]',
+  'Open follow-up': 'bg-[#f1dfd6] text-[#855243] ring-[#e3c6ba]',
+  Inactive: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  Closed: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  'Extended pending close': 'bg-[#e8e0e7] text-[#6f5768] ring-[#d8cad5]',
+  sent: 'bg-[#dfe9da] text-[#466043] ring-[#c7d7c1]',
+  queued: 'bg-[#f4e6cb] text-[#7f5a23] ring-[#e6d2aa]',
+  JV: 'bg-[#e4e5db] text-[#5f6650] ring-[#d4d7c8]',
+  Unspecified: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  'Squadigital FR': 'bg-[#e6e1d7] text-[#5f5a4c] ring-[#d8d0c2]',
+  'Squadigital UK': 'bg-[#dddccf] text-[#4d5444] ring-[#cfcfbf]',
+  'Squadigital GE': 'bg-[#e3e8df] text-[#4f5c49] ring-[#d1d9cb]',
+  Immediate: 'bg-[#efe6d6] text-[#665537] ring-[#e3d4ba]',
+  'Daily digest': 'bg-[#ebe5de] text-[#655f53] ring-[#ddd3c8]',
+  'Weekly digest': 'bg-[#e8e0e7] text-[#6f5768] ring-[#d8cad5]',
+  'Manual review': 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  Enabled: 'bg-[#dfe9da] text-[#466043] ring-[#c7d7c1]',
+  Disabled: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  join: 'bg-[#efe6d6] text-[#665537] ring-[#e3d4ba]',
+  end_3_days: 'bg-[#f4e6cb] text-[#7f5a23] ring-[#e6d2aa]',
+  end_1_day: 'bg-[#f1dfd6] text-[#855243] ring-[#e3c6ba]',
+  still_open_weekly: 'bg-[#e8e0e7] text-[#6f5768] ring-[#d8cad5]',
+  custom: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
 }
 
 export function StatusBadge({ value }: StatusBadgeProps) {
   return (
     <span
       className={`inline-flex max-w-full items-center justify-center rounded-full px-3 py-1 text-center text-xs font-medium leading-4 ring-1 whitespace-normal break-words ${
-        statusStyles[value] ?? 'bg-brand-500/15 text-brand-200 ring-brand-500/30'
+        statusStyles[value] ?? 'bg-[#efe6d6] text-[#665537] ring-[#e3d4ba]'
       }`}
     >
       {humanize(value)}

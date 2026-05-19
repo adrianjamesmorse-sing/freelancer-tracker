@@ -133,7 +133,7 @@ export function FreelancersPage() {
         title="All freelancers"
         action={
           <button
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30"
+            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]"
             onClick={openCreateModal}
             type="button"
           >
@@ -146,13 +146,13 @@ export function FreelancersPage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row">
               <input
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white placeholder:text-slate-500 sm:max-w-sm"
+                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 placeholder:text-stone-400 sm:max-w-sm"
                 placeholder="Search freelancer, email, country, owner, entity..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
               <select
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white sm:w-56"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 sm:w-56"
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as 'All' | FreelancerStatus)}
               >
@@ -163,14 +163,14 @@ export function FreelancersPage() {
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
-            <div className="text-sm text-slate-400">{filteredRows.length} freelancers</div>
+            <div className="text-sm text-stone-500">{filteredRows.length} freelancers</div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-800">
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white/85">
             <div className="max-h-[68vh] overflow-auto">
               <table className="min-w-[1180px] divide-y divide-slate-800 text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur">
-                  <tr className="text-left text-slate-400">
+                <thead className="sticky top-0 z-10 bg-[#f8f3ea]/95 backdrop-blur">
+                  <tr className="text-left text-stone-600">
                     <SortableHeader label="Freelancer" active={sortKey === 'freelancerName'} direction={sortDirection} onClick={() => toggleSort('freelancerName')} />
                     <SortableHeader label="Status" active={sortKey === 'freelancerStatus'} direction={sortDirection} onClick={() => toggleSort('freelancerStatus')} />
                     <SortableHeader label="Country" active={sortKey === 'country'} direction={sortDirection} onClick={() => toggleSort('country')} />
@@ -178,31 +178,31 @@ export function FreelancersPage() {
                     <SortableHeader label="Projects" active={sortKey === 'projectCount'} direction={sortDirection} onClick={() => toggleSort('projectCount')} />
                     <SortableHeader label="Next end" active={sortKey === 'nextEndDate'} direction={sortDirection} onClick={() => toggleSort('nextEndDate')} />
                     <SortableHeader label="Email" active={sortKey === 'personalEmail'} direction={sortDirection} onClick={() => toggleSort('personalEmail')} />
-                    <th className="sticky top-0 bg-slate-900/95 px-4 py-3 font-medium">Entity</th>
-                    <th className="sticky top-0 bg-slate-900/95 px-4 py-3 font-medium">Actions</th>
+                    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Entity</th>
+                    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80">
                   {filteredRows.map((row) => (
-                    <tr key={row.freelancer.id} className="hover:bg-slate-900/45">
+                    <tr key={row.freelancer.id} className="hover:bg-[#fbf7ef]">
                       <td className="px-4 py-3 align-top">
-                        <Link to={`/freelancers/${row.freelancer.id}`} className="font-medium text-white hover:text-brand-300">
+                        <Link to={`/freelancers/${row.freelancer.id}`} className="font-medium text-stone-900 hover:text-brand-700">
                           {row.freelancer.freelancerName}
                         </Link>
                       </td>
                       <td className="px-4 py-3 align-top"><StatusBadge value={row.freelancer.freelancerStatus} /></td>
-                      <td className="px-4 py-3 align-top text-slate-300">{row.freelancer.country || '—'}</td>
-                      <td className="px-4 py-3 align-top text-slate-300">{row.owner || '—'}</td>
-                      <td className="px-4 py-3 align-top text-slate-300">{row.projectCount}</td>
-                      <td className="px-4 py-3 align-top text-slate-300">{row.nextEndDate ? formatDate(row.nextEndDate) : '—'}</td>
-                      <td className="px-4 py-3 align-top text-slate-300">
+                      <td className="px-4 py-3 align-top text-stone-700">{row.freelancer.country || '—'}</td>
+                      <td className="px-4 py-3 align-top text-stone-700">{row.owner || '—'}</td>
+                      <td className="px-4 py-3 align-top text-stone-700">{row.projectCount}</td>
+                      <td className="px-4 py-3 align-top text-stone-700">{row.nextEndDate ? formatDate(row.nextEndDate) : '—'}</td>
+                      <td className="px-4 py-3 align-top text-stone-700">
                         <div className="max-w-[280px] break-all">{row.freelancer.personalEmail || '—'}</div>
                       </td>
-                      <td className="px-4 py-3 align-top text-slate-400">{row.entity}</td>
+                      <td className="px-4 py-3 align-top text-stone-500">{row.entity}</td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
                           <button
-                            className="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-100 hover:border-brand-400/40 hover:text-white"
+                            className="rounded-lg border border-stone-300 bg-[#f8f3ea] px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-brand-400/40 hover:text-stone-900"
                             onClick={() => openEditModal(row.freelancer)}
                             type="button"
                           >
@@ -247,10 +247,10 @@ export function FreelancersPage() {
           <Input label="Phone number" value={form.phoneNumber} onChange={(value) => setForm((current) => ({ ...current, phoneNumber: value }))} />
           <CountrySelect value={form.country} onChange={(value) => setForm((current) => ({ ...current, country: value }))} />
           <Input label="Address" value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
-          <label className="block text-sm text-slate-300">
+          <label className="block text-sm text-stone-700">
             <span className="mb-1 block">Status</span>
             <select
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
               value={form.freelancerStatus}
               onChange={(event) => setForm((current) => ({ ...current, freelancerStatus: event.target.value as FreelancerStatus }))}
             >
@@ -260,26 +260,26 @@ export function FreelancersPage() {
             </select>
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-stone-700">
               <input type="checkbox" checked={form.registrationNumber} onChange={(event) => setForm((current) => ({ ...current, registrationNumber: event.target.checked }))} />
               Registration number received
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-stone-700">
               <input type="checkbox" checked={form.questionFlag} onChange={(event) => setForm((current) => ({ ...current, questionFlag: event.target.checked }))} />
               Question flag
             </label>
           </div>
-          <label className="block text-sm text-slate-300">
+          <label className="block text-sm text-stone-700">
             <span className="mb-1 block">Comments</span>
             <textarea
-              className="min-h-24 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+              className="min-h-24 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
               value={form.comments}
               onChange={(event) => setForm((current) => ({ ...current, comments: event.target.value }))}
             />
           </label>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {message ? <p className="text-sm text-slate-400">{message}</p> : <span />}
-            <button className="rounded-xl border border-brand-400/30 bg-brand-500/20 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500/30" type="submit">
+            {message ? <p className="text-sm text-stone-500">{message}</p> : <span />}
+            <button className="rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]" type="submit">
               {editingFreelancer ? 'Save changes' : 'Add freelancer'}
             </button>
           </div>
@@ -310,10 +310,10 @@ function getSortValue(row: FreelancerRow, key: SortKey) {
 
 function SortableHeader({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
   return (
-    <th className="sticky top-0 bg-slate-900/95 px-4 py-3 font-medium">
-      <button className="inline-flex items-center gap-2 text-left transition hover:text-white" onClick={onClick} type="button">
+    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">
+      <button className="inline-flex items-center gap-2 text-left transition hover:text-stone-900" onClick={onClick} type="button">
         <span>{label}</span>
-        <span className={active ? 'text-brand-300' : 'text-slate-600'}>{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+        <span className={active ? 'text-brand-700' : 'text-stone-400'}>{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
       </button>
     </th>
   )
@@ -321,10 +321,10 @@ function SortableHeader({ label, active, direction, onClick }: { label: string; 
 
 function Input({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
   return (
-    <label className="block text-sm text-slate-300">
+    <label className="block text-sm text-stone-700">
       <span className="mb-1 block">{label}</span>
       <input
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -336,10 +336,10 @@ function Input({ label, value, onChange, type = 'text', required = false }: { la
 
 function CountrySelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <label className="block text-sm text-slate-300">
+    <label className="block text-sm text-stone-700">
       <span className="mb-1 block">Country</span>
       <select
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white"
+        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >

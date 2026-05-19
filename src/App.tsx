@@ -1,7 +1,9 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { TrackerProvider } from './context/TrackerContext'
-import { AdminPage } from './pages/AdminPage'
+import { AdminCredentialsPage } from './pages/AdminCredentialsPage'
+import { AdminGraphPage } from './pages/AdminGraphPage'
+import { AdminSSOPage } from './pages/AdminSSOPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FeedbackManagerPage } from './pages/FeedbackManagerPage'
 import { FinancialsPage } from './pages/FinancialsPage'
@@ -25,8 +27,11 @@ function App() {
           <Route path="/financials" element={<FinancialsPage />} />
           <Route path="/imports" element={<ImportsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="/feedback" element={<FeedbackManagerPage />} />
+          <Route path="/admin" element={<Navigate to="/admin/sso" replace />} />
+          <Route path="/admin/sso" element={<AdminSSOPage />} />
+          <Route path="/admin/graph" element={<AdminGraphPage />} />
+          <Route path="/admin/credentials" element={<AdminCredentialsPage />} />
         </Routes>
       </Layout>
     </TrackerProvider>

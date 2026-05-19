@@ -127,7 +127,7 @@ export function ProjectsPage() {
 
           <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white/85">
             <div className="max-h-[68vh] overflow-auto">
-              <table className="min-w-[1080px] divide-y divide-slate-800 text-sm">
+              <table className="min-w-[1080px] divide-y divide-stone-200 text-sm">
                 <thead className="sticky top-0 z-10 bg-[#f8f3ea]/95 backdrop-blur">
                   <tr className="text-left text-stone-600">
                     <SortableHeader label="Project" active={sortKey === 'projectName'} direction={sortDirection} onClick={() => toggleSort('projectName')} />
@@ -138,7 +138,7 @@ export function ProjectsPage() {
                     <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80">
+                <tbody className="divide-y divide-stone-200/80">
                   {filteredRows.map((row) => (
                     <tr key={row.project.id} className="hover:bg-[#fbf7ef]">
                       <td className="px-4 py-3 align-top">
@@ -157,7 +157,7 @@ export function ProjectsPage() {
                       </td>
                       <td className="px-4 py-3 align-top">
                         <button
-                          className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
                           onClick={() => {
                             if (window.confirm(`Remove ${row.project.projectName} and related allocations?`)) {
                               removeProject(row.project.id)

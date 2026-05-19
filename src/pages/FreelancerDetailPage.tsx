@@ -37,7 +37,7 @@ export function FreelancerDetailPage() {
       <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
         <Panel title="Allocations">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
+            <table className="min-w-full divide-y divide-stone-200 text-sm">
               <thead>
                 <tr className="text-left text-stone-500">
                   <th className="pb-3 pr-4 font-medium">Project</th>
@@ -47,7 +47,7 @@ export function FreelancerDetailPage() {
                   <th className="pb-3 pr-4 font-medium">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-stone-200/80">
                 {allocations.map((allocation) => {
                   const project = getProjectById(allocation.projectId)
                   return (

@@ -6,21 +6,29 @@ import { Icon } from './Icon'
 import { Modal } from './Modal'
 import { StatusBadge } from './StatusBadge'
 
+type AppKey = 'freelancers' | 'feedback' | 'projects' | 'admin'
+
 const freelancerLinks = [
   { to: '/', label: 'Dashboard', icon: 'dashboard' as const },
   { to: '/freelancers', label: 'Freelancers', icon: 'users' as const },
-  { to: '/projects', label: 'Projects', icon: 'folder' as const },
   { to: '/financials', label: 'Financials', icon: 'coins' as const },
   { to: '/imports', label: 'Imports', icon: 'upload' as const },
   { to: '/notifications', label: 'Notifications', icon: 'bell' as const },
-  { to: '/admin', label: 'Admin', icon: 'shield' as const },
 ]
 
-const feedbackLinks = [{ to: '/feedback', label: 'Overview', icon: 'message-square' as const }]
+const feedbackLinks = [{ to: '/feedback', label: 'Project browser', icon: 'message-square' as const }]
+const projectLinks = [{ to: '/projects', label: 'Projects', icon: 'folder' as const }]
+const adminLinks = [
+  { to: '/admin/sso', label: 'SSO', icon: 'shield' as const },
+  { to: '/admin/graph', label: 'Graph permissions', icon: 'globe' as const },
+  { to: '/admin/credentials', label: 'Credentials', icon: 'settings' as const },
+]
 
-const appLinks = [
-  { to: '/', label: 'Freelancer Manager', icon: 'users' as const, match: ['/', '/freelancers', '/projects', '/financials', '/imports', '/notifications', '/admin'] },
-  { to: '/feedback', label: 'Feedback Manager', icon: 'message-square' as const, match: ['/feedback'] },
+const appLinks: Array<{ key: AppKey; to: string; label: string; icon: 'users' | 'message-square' | 'folder' | 'shield'; match: string[] }> = [
+  { key: 'freelancers', to: '/', label: 'Freelancers', icon: 'users', match: ['/', '/freelancers', '/financials', '/imports', '/notifications'] },
+  { key: 'feedback', to: '/feedback', label: 'Feedback', icon: 'message-square', match: ['/feedback'] },
+  { key: 'projects', to: '/projects', label: 'Projects', icon: 'folder', match: ['/projects'] },
+  { key: 'admin', to: '/admin/sso', label: 'Admin', icon: 'shield', match: ['/admin'] },
 ]
 
 const SIDEBAR_KEY = 'vertex-sidebar-collapsed'
@@ -48,13 +56,22 @@ export function Layout({ children }: PropsWithChildren) {
   )
   const queuedCount = notifications.filter((item) => item.status === 'queued').length
   const currentApp =
-    appLinks.find((app) => app.match.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`))) ?? appLinks[0]
-  const links = currentApp.to === '/feedback' ? feedbackLinks : freelancerLinks
+    appLinks.find((app) => app.match.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`))) ??
+    appLinks[0]
+
+  const links =
+    currentApp.key === 'feedback'
+      ? feedbackLinks
+      : currentApp.key === 'projects'
+        ? projectLinks
+        : currentApp.key === 'admin'
+          ? adminLinks
+          : freelancerLinks
 
   return (
     <>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(159,135,104,0.10),transparent_24%),radial-gradient(circle_at_top_right,rgba(127,142,108,0.10),transparent_22%),linear-gradient(180deg,#fbf8f2_0%,#f4efe6_100%)] text-stone-900">
-        <header className="sticky top-0 z-30 h-[50px] border-b border-stone-200/80 bg-[#f7f2e8]/90 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 h-[50px] border-b border-stone-200/80 bg-[#f7f2e8]/92 backdrop-blur-xl">
           <div className="mx-auto flex h-full max-w-[1920px] items-center gap-3 px-3 sm:px-4 xl:px-5">
             <Link to="/" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-brand-700 shadow-sm" title="Vertex">
               <Icon name="vertex" className="h-5 w-5" />
@@ -62,7 +79,7 @@ export function Layout({ children }: PropsWithChildren) {
 
             <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex">
               {appLinks.map((app) => {
-                const active = currentApp.to === app.to
+                const active = currentApp.key === app.key
                 return (
                   <NavLink
                     key={app.to}
@@ -70,7 +87,9 @@ export function Layout({ children }: PropsWithChildren) {
                     end={app.to === '/'}
                     className={[
                       'inline-flex h-8 items-center gap-2 rounded-xl px-3 text-sm font-medium transition',
-                      active ? 'bg-[#e7dece] text-brand-800 shadow-sm' : 'text-stone-600 hover:bg-[#efe7da] hover:text-stone-900',
+                      active
+                        ? 'border-b-2 border-olive-700 text-stone-900'
+                        : 'text-stone-600 hover:bg-[#efe7da] hover:text-stone-900',
                     ].join(' ')}
                   >
                     <Icon name={app.icon} className="h-4 w-4" />
@@ -132,7 +151,7 @@ export function Layout({ children }: PropsWithChildren) {
                   <NavLink
                     key={link.to}
                     to={link.to}
-                    end={link.to === '/'}
+                    end={link.to === '/' || link.to === '/feedback' || link.to === '/projects'}
                     className={({ isActive }) =>
                       [
                         'group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition',
@@ -165,7 +184,9 @@ export function Layout({ children }: PropsWithChildren) {
         description="In-app previews of the notification content and cadence you’re designing before email delivery is wired up."
         footer={
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs text-stone-500">{queuedCount} queued · {notifications.length} total notifications</div>
+            <div className="text-xs text-stone-500">
+              {queuedCount} queued · {notifications.length} total notifications
+            </div>
             <Link
               to="/notifications"
               className="inline-flex items-center gap-2 rounded-2xl border border-stone-300 bg-stone-900 px-4 py-2 text-sm font-medium text-stone-50 transition hover:bg-stone-800"
@@ -199,7 +220,11 @@ export function Layout({ children }: PropsWithChildren) {
               <div className="mt-3 text-xs text-stone-500">Scheduled for {formatDate(notification.scheduledFor)}</div>
             </div>
           ))}
-          {!notificationPreview.length ? <div className="rounded-[22px] border border-stone-200 bg-white/80 px-4 py-6 text-sm text-stone-500">No notifications have been generated yet.</div> : null}
+          {!notificationPreview.length ? (
+            <div className="rounded-[22px] border border-stone-200 bg-white/80 px-4 py-6 text-sm text-stone-500">
+              No notifications have been generated yet.
+            </div>
+          ) : null}
         </div>
       </Modal>
     </>

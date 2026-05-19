@@ -168,7 +168,7 @@ export function FreelancersPage() {
 
           <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white/85">
             <div className="max-h-[68vh] overflow-auto">
-              <table className="min-w-[1180px] divide-y divide-slate-800 text-sm">
+              <table className="min-w-[1180px] divide-y divide-stone-200 text-sm">
                 <thead className="sticky top-0 z-10 bg-[#f8f3ea]/95 backdrop-blur">
                   <tr className="text-left text-stone-600">
                     <SortableHeader label="Freelancer" active={sortKey === 'freelancerName'} direction={sortDirection} onClick={() => toggleSort('freelancerName')} />
@@ -182,7 +182,7 @@ export function FreelancersPage() {
                     <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80">
+                <tbody className="divide-y divide-stone-200/80">
                   {filteredRows.map((row) => (
                     <tr key={row.freelancer.id} className="hover:bg-[#fbf7ef]">
                       <td className="px-4 py-3 align-top">
@@ -209,7 +209,7 @@ export function FreelancersPage() {
                             Edit
                           </button>
                           <button
-                            className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
+                            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
                             onClick={() => {
                               if (window.confirm(`Remove ${row.freelancer.freelancerName} and their related allocations?`)) {
                                 removeFreelancer(row.freelancer.id)
@@ -260,11 +260,11 @@ export function FreelancersPage() {
             </select>
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 shadow-sm">
               <input type="checkbox" checked={form.registrationNumber} onChange={(event) => setForm((current) => ({ ...current, registrationNumber: event.target.checked }))} />
               Registration number received
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2 text-sm text-stone-700">
+            <label className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 shadow-sm">
               <input type="checkbox" checked={form.questionFlag} onChange={(event) => setForm((current) => ({ ...current, questionFlag: event.target.checked }))} />
               Question flag
             </label>

@@ -73,7 +73,7 @@ export function ImportsPage() {
             </label>
 
             {message ? (
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
                 {message}
               </div>
             ) : null}
@@ -130,7 +130,7 @@ function InfoCard({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-2xl border border-white/8 bg-white/85 p-4">
       <div className="text-xs uppercase tracking-[0.16em] text-stone-500">{title}</div>
-      <div className="mt-2 text-sm text-slate-200">{body}</div>
+      <div className="mt-2 text-sm text-stone-700">{body}</div>
     </div>
   )
 }

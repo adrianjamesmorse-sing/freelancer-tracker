@@ -22,7 +22,7 @@ export function ProjectDetailPage() {
   if (!project) {
     return (
       <Panel title="Project not found">
-        <Link to="/projects" className="text-brand-300 hover:text-brand-200">Back to projects</Link>
+        <Link to="/projects" className="text-brand-700 hover:text-brand-800">Back to projects</Link>
       </Panel>
     )
   }
@@ -66,7 +66,7 @@ export function ProjectDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/projects" className="text-sm text-brand-300 hover:text-brand-200">← Back to projects</Link>
+        <Link to="/projects" className="text-sm text-brand-700 hover:text-brand-800">← Back to projects</Link>
         <h2 className="mt-2 text-3xl font-semibold text-stone-900">{project.projectName}</h2>
         <p className="mt-2 text-sm text-stone-500">{project.entity} · {project.projectManagerName}</p>
       </div>
@@ -74,7 +74,7 @@ export function ProjectDetailPage() {
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <Panel title="Assigned freelancers">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
+            <table className="min-w-full divide-y divide-stone-200 text-sm">
               <thead>
                 <tr className="text-left text-stone-500">
                   <th className="pb-3 pr-4 font-medium">Freelancer</th>
@@ -85,7 +85,7 @@ export function ProjectDetailPage() {
                   <th className="pb-3 pr-4 font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-stone-200/80">
                 {allocations.map((allocation) => {
                   const freelancer = getFreelancerById(allocation.freelancerId)
                   return (
@@ -97,7 +97,7 @@ export function ProjectDetailPage() {
                       <td className="py-3 pr-4"><StatusBadge value={allocation.allocationStatus} /></td>
                       <td className="py-3 pr-4">
                         <button
-                          className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-200 hover:bg-rose-500/20"
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
                           onClick={() => {
                             if (window.confirm('Remove this freelancer from the project?')) {
                               removeAllocation(allocation.id)
@@ -120,7 +120,7 @@ export function ProjectDetailPage() {
             <label className="block text-sm text-stone-700">
               <span className="mb-1 block">Freelancer</span>
               <select
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
+                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900 shadow-sm"
                 value={form.freelancerId}
                 onChange={(event) => setForm((current) => ({ ...current, freelancerId: event.target.value }))}
                 required
@@ -144,7 +144,7 @@ export function ProjectDetailPage() {
               <label className="block text-sm text-stone-700">
                 <span className="mb-1 block">Currency</span>
                 <select
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900 shadow-sm"
                   value={form.dailyRateCurrency}
                   onChange={(event) => setForm((current) => ({ ...current, dailyRateCurrency: event.target.value as 'EUR' | 'GBP' }))}
                 >
@@ -155,7 +155,7 @@ export function ProjectDetailPage() {
               <label className="block text-sm text-stone-700">
                 <span className="mb-1 block">Status</span>
                 <select
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900 shadow-sm"
                   value={form.allocationStatus}
                   onChange={(event) => setForm((current) => ({ ...current, allocationStatus: event.target.value as NewAllocationInput['allocationStatus'] }))}
                 >
@@ -184,7 +184,7 @@ function Input({ label, value, onChange, type = 'text', required = false }: { la
     <label className="block text-sm text-stone-700">
       <span className="mb-1 block">{label}</span>
       <input
-        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-stone-900"
+        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900 shadow-sm"
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}

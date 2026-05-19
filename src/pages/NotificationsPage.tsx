@@ -185,8 +185,8 @@ export function NotificationsPage() {
                   <button
                     className={`inline-flex h-11 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition ${
                       rule.enabled
-                        ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/18'
-                        : 'border-slate-400/20 bg-white/85 text-stone-700 hover:bg-white/10'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-50'
                     }`}
                     onClick={() => toggleNotificationRule(rule.id)}
                     type="button"
@@ -208,7 +208,7 @@ export function NotificationsPage() {
                 <dl className="mt-5 space-y-4 text-sm">
                   <div className="rounded-2xl border border-stone-200 bg-[#f8f3ea] p-4">
                     <dt className="text-xs uppercase tracking-[0.16em] text-stone-500">Subject</dt>
-                    <dd className="mt-2 text-slate-100">{rule.subject}</dd>
+                    <dd className="mt-2 text-stone-900">{rule.subject}</dd>
                   </div>
                   <div className="rounded-2xl border border-stone-200 bg-[#f8f3ea] p-4">
                     <dt className="text-xs uppercase tracking-[0.16em] text-stone-500">Body</dt>
@@ -232,7 +232,7 @@ export function NotificationsPage() {
                     Edit rule
                   </button>
                   <button
-                    className="inline-flex items-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-2 text-sm text-rose-100 transition hover:bg-rose-500/18"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700 transition hover:bg-rose-100"
                     onClick={() => {
                       if (window.confirm(`Delete notification rule “${rule.name}”?`)) removeNotificationRule(rule.id)
                     }}

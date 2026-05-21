@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import { ComposableMap, Geographies, Geography, Sphere, ZoomableGroup } from 'react-simple-maps'
 import type { CountryMapDatum } from '../lib/geo'
 import { getCountryLookupKeys, normalizeGeographyName } from '../lib/geo'
@@ -62,17 +63,17 @@ export function WorldMapPanel({ countries, compact = false }: WorldMapPanelProps
 
           <div ref={mapFrameRef} className="relative overflow-hidden rounded-[22px] border border-stone-200 bg-[radial-gradient(circle_at_top,rgba(127,142,108,0.08),transparent_34%),linear-gradient(180deg,#fffdfa_0%,#f7f2e9_100%)]">
             <ComposableMap projection="geoMercator" projectionConfig={{ scale: compact ? 170 : 155 }} style={{ width: '100%', height: compact ? '430px' : '500px' }}>
-              <ZoomableGroup center={position.coordinates} zoom={position.zoom} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} onMoveEnd={({ coordinates, zoom }) => setPosition({ coordinates: coordinates as [number, number], zoom })}>
+              <ZoomableGroup center={position.coordinates} zoom={position.zoom} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} onMoveEnd={(position: { coordinates: [number, number]; zoom: number }) => setPosition({ coordinates: position.coordinates, zoom: position.zoom })}>
                 <Sphere stroke="#e5ddd0" strokeWidth={0.8} fill="#fbf8f1" />
                 <Geographies geography={geographyUrl}>
-                  {({ geographies }) => geographies.map((geography) => {
+                  {({ geographies }: { geographies: Array<{ rsmKey: string; properties?: { name?: string } }> }) => geographies.map((geography) => {
                     const normalizedName = normalizeGeographyName(String(geography.properties?.name ?? ''))
                     const match = countryMap.get(normalizedName)
                     return (
                       <Geography
                         key={geography.rsmKey}
                         geography={geography}
-                        onMouseMove={(event) => {
+                        onMouseMove={(event: MouseEvent<SVGPathElement>) => {
                           if (!match || !mapFrameRef.current) return
                           const bounds = mapFrameRef.current.getBoundingClientRect()
                           setTooltip({ country: match, x: event.clientX - bounds.left + 14, y: event.clientY - bounds.top + 14 })

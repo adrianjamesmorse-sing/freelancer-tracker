@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Panel } from '../components/Panel'
 import { StatCard } from '../components/StatCard'
-import { defaultAdminConfig, loadAdminConfig, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
+import { loadAdminConfig, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
+
 
 const allPermissions = ['User.Read.All', 'Directory.Read.All', 'ProfilePhoto.Read.All']
 

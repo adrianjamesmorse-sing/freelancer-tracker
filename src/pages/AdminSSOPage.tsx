@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Panel } from '../components/Panel'
 import { StatCard } from '../components/StatCard'
-import { callbackUrl, defaultAdminConfig, loadAdminConfig, oidcDiscoveryUrl, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
+import { callbackUrl, loadAdminConfig, oidcDiscoveryUrl, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
 
 export function AdminSSOPage() {
   const [config, setConfig] = useState<VertexAdminConfig>(() => loadAdminConfig())

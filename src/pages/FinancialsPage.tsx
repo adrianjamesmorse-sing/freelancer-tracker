@@ -121,7 +121,7 @@ function buildProjectRows(allocations: any[], projects: any[], year: number, mon
     if (!grouped.has(project.id)) grouped.set(project.id, { key: project.id, label: project.projectName, currencyTotals: { EUR: 0, GBP: 0 }, activeFreelancers: 0, nominalTotal: 0 })
     if (!freelancerSets.has(project.id)) freelancerSets.set(project.id, new Set<string>())
     const row = grouped.get(project.id)!
-    row.currencyTotals[item.dailyRateCurrency] += item.cost
+    row.currencyTotals[item.dailyRateCurrency as Currency] += item.cost
     row.nominalTotal += item.cost
     freelancerSets.get(project.id)!.add(item.freelancerId)
   })
@@ -139,7 +139,7 @@ function buildFreelancerRows(allocations: any[], freelancers: any[], year: numbe
     if (!freelancer) return
     if (!grouped.has(freelancer.id)) grouped.set(freelancer.id, { key: freelancer.id, label: freelancer.freelancerName, currencyTotals: { EUR: 0, GBP: 0 }, activeFreelancers: 1, nominalTotal: 0 })
     const row = grouped.get(freelancer.id)!
-    row.currencyTotals[item.dailyRateCurrency] += item.cost
+    row.currencyTotals[item.dailyRateCurrency as Currency] += item.cost
     row.nominalTotal += item.cost
   })
   return Array.from(grouped.values()).sort((a, b) => b.nominalTotal - a.nominalTotal)

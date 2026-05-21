@@ -393,16 +393,22 @@ function sanitizeRuleInput(input: NewNotificationRuleInput): NewNotificationRule
   }
 }
 
-function previewText(value: string) {
-  return value
-    .replaceAll('{{freelancerName}}', 'Sophie Martin')
-    .replaceAll('{{projectName}}', 'Retail Transformation')
-    .replaceAll('{{entity}}', 'Squadigital FR')
-    .replaceAll('{{managerName}}', 'Amelie Laurent')
-    .replaceAll('{{startDate}}', '2026-05-06')
-    .replaceAll('{{endDate}}', '2026-06-14')
-    .replaceAll('{{role}}', 'Senior Product Designer')
+function replaceToken(input: string, token: string, replacement: string) {
+  return input.split(token).join(replacement)
 }
+
+function previewText(value: string) {
+  let output = value
+  output = replaceToken(output, '{{freelancerName}}', 'Sophie Martin')
+  output = replaceToken(output, '{{projectName}}', 'Retail Transformation')
+  output = replaceToken(output, '{{entity}}', 'Squadigital FR')
+  output = replaceToken(output, '{{managerName}}', 'Amelie Laurent')
+  output = replaceToken(output, '{{startDate}}', '2026-05-06')
+  output = replaceToken(output, '{{endDate}}', '2026-06-14')
+  output = replaceToken(output, '{{role}}', 'Senior Product Designer')
+  return output
+}
+
 
 function Input({ label, value, onChange, required = false }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
   return (

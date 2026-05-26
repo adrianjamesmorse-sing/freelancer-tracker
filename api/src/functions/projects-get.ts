@@ -1,35 +1,24 @@
-import { app } from '@azure/functions'
-import { getPool } from '../lib/db.js'
-import { json, error } from '../lib/response.js'
+import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions'
+import { query } from '../lib/db.js'
+import { error, json } from '../lib/response.js'
 
 app.http('projects-get', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'projects',
-  handler: async () => {
+  handler: async (_request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     try {
-      const pool = getPool()
-      const result = await pool.query(
+      const result = await query(
         `
-        select
-          id,
-          project_name,
-          entity,
-          project_manager_name,
-          project_manager_email,
-          status,
-          start_date,
-          end_date,
-          created_at
+        select id, project_name, entity, project_manager_name, project_manager_email
         from projects
         order by project_name asc
         `,
       )
-
-      return json(result.rows)
+      return json(200, result.rows)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      return error(message, 500)
+      context.error(err)
+      return error(500, 'Failed to load projects', err instanceof Error ? err.message : String(err))
     }
   },
 })

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Modal } from '../components/Modal'
 import { Panel } from '../components/Panel'
-import { StatusBadge } from '../components/StatusBadge'
 import { useTrackerData } from '../hooks/useTrackerData'
 import { formatDate } from '../lib/format'
 import type { Entity, NewProjectInput } from '../types'
@@ -20,7 +19,7 @@ const initialForm: NewProjectInput = {
 }
 
 export function ProjectsPage() {
-  const { projects, getAllocationsForProject, addProject, removeProject } = useTrackerData()
+  const { projects, getAllocationsForProject, addProject, removeProject, isProjectsLoaded, isAllocationsLoaded } = useTrackerData()
   const [form, setForm] = useState<NewProjectInput>(initialForm)
   const [message, setMessage] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -28,6 +27,8 @@ export function ProjectsPage() {
   const [entityFilter, setEntityFilter] = useState<'All' | Entity>('All')
   const [sortKey, setSortKey] = useState<SortKey>('projectName')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const rows = useMemo(() => projects.map((project) => {
     const items = getAllocationsForProject(project.id)
@@ -65,13 +66,31 @@ export function ProjectsPage() {
     return filtered
   }, [rows, search, entityFilter, sortKey, sortDirection])
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const result = addProject(form)
-    setMessage(result.message)
-    if (result.success) {
-      setForm(initialForm)
-      setIsModalOpen(false)
+    setIsSubmitting(true)
+    try {
+      const result = await addProject(form)
+      setMessage(result.message)
+      if (result.success) {
+        setForm(initialForm)
+        setIsModalOpen(false)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleRemove = async (id: string) => {
+    setRemovingId(id)
+    setMessage('')
+    try {
+      await removeProject(id)
+      setMessage('Project removed.')
+    } catch {
+      setMessage('Failed to remove project.')
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -84,170 +103,225 @@ export function ProjectsPage() {
     setSortDirection('asc')
   }
 
-  return (
-    <>
-      <Panel
-        title="All projects"
-        action={
-          <button
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]"
-            onClick={() => {
-              setMessage('')
-              setIsModalOpen(true)
-            }}
-            type="button"
-          >
-            <span aria-hidden="true">＋</span>
-            <span>Add project</span>
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-              <input
-                className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 placeholder:text-stone-400 sm:max-w-sm"
-                placeholder="Search project, manager, entity..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              <select
-                className="rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 sm:w-56"
-                value={entityFilter}
-                onChange={(event) => setEntityFilter(event.target.value as 'All' | Entity)}
-              >
-                <option value="All">All entities</option>
-                {entityOptions.map((entity) => (
-                  <option key={entity} value={entity}>{entity}</option>
-                ))}
-              </select>
-            </div>
-            <div className="text-sm text-stone-500">{filteredRows.length} projects</div>
-          </div>
+  const isLoaded = isProjectsLoaded && isAllocationsLoaded
 
-          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white/85">
-            <div className="max-h-[68vh] overflow-auto">
-              <table className="min-w-[1080px] divide-y divide-stone-200 text-sm">
-                <thead className="sticky top-0 z-10 bg-[#f8f3ea]/95 backdrop-blur">
-                  <tr className="text-left text-stone-600">
-                    <SortableHeader label="Project" active={sortKey === 'projectName'} direction={sortDirection} onClick={() => toggleSort('projectName')} />
-                    <SortableHeader label="Entity" active={sortKey === 'entity'} direction={sortDirection} onClick={() => toggleSort('entity')} />
-                    <SortableHeader label="Project manager" active={sortKey === 'projectManagerName'} direction={sortDirection} onClick={() => toggleSort('projectManagerName')} />
-                    <SortableHeader label="Freelancers" active={sortKey === 'freelancerCount'} direction={sortDirection} onClick={() => toggleSort('freelancerCount')} />
-                    <SortableHeader label="Date range" active={sortKey === 'dateRange'} direction={sortDirection} onClick={() => toggleSort('dateRange')} />
-                    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">Actions</th>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-3xl font-semibold tracking-tight text-stone-900">Projects</h2>
+          <p className="mt-2 max-w-2xl text-sm text-stone-600">
+            Shared project database used across freelancers and feedback.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+        >
+          <span aria-hidden="true">＋</span>
+          Add project
+        </button>
+      </div>
+
+      {message ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {message}
+        </div>
+      ) : null}
+
+      <Panel title="All projects" subtitle="Shared project records with staffing visibility across Vertex.">
+        <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-1 flex-col gap-3 md:flex-row">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search projects, managers or entities"
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none ring-0 transition placeholder:text-stone-400 focus:border-stone-500 md:max-w-md"
+            />
+            <select
+              value={entityFilter}
+              onChange={(event) => setEntityFilter(event.target.value as 'All' | Entity)}
+              className="rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
+            >
+              <option value="All">All entities</option>
+              {entityOptions.map((entity) => (
+                <option key={entity} value={entity}>{entity}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-white">
+          <div className="max-h-[560px] overflow-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/95 text-stone-500 backdrop-blur">
+                <tr>
+                  <SortableHeader label="Project" active={sortKey === 'projectName'} direction={sortDirection} onClick={() => toggleSort('projectName')} />
+                  <SortableHeader label="Entity" active={sortKey === 'entity'} direction={sortDirection} onClick={() => toggleSort('entity')} />
+                  <SortableHeader label="Project manager" active={sortKey === 'projectManagerName'} direction={sortDirection} onClick={() => toggleSort('projectManagerName')} />
+                  <SortableHeader label="Freelancers" active={sortKey === 'freelancerCount'} direction={sortDirection} onClick={() => toggleSort('freelancerCount')} />
+                  <SortableHeader label="Date range" active={sortKey === 'dateRange'} direction={sortDirection} onClick={() => toggleSort('dateRange')} />
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!isLoaded ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-stone-500">Loading projects…</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-200/80">
-                  {filteredRows.map((row) => (
-                    <tr key={row.project.id} className="hover:bg-[#fbf7ef]">
-                      <td className="px-4 py-3 align-top">
-                        <Link to={`/projects/${row.project.id}`} className="font-medium text-stone-900 hover:text-brand-700">
-                          {row.project.projectName}
+                ) : filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-stone-500">No projects found.</td>
+                  </tr>
+                ) : filteredRows.map((row) => (
+                  <tr key={row.project.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50/70">
+                    <td className="px-4 py-3 font-medium text-stone-900">
+                      <Link to={`/projects/${row.project.id}`} className="hover:text-stone-700">
+                        {row.project.projectName}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-stone-700">{row.project.entity}</td>
+                    <td className="px-4 py-3 text-stone-700">
+                      <div>{row.project.projectManagerName}</div>
+                      <div className="text-xs text-stone-500">{row.project.projectManagerEmail}</div>
+                    </td>
+                    <td className="px-4 py-3 text-stone-700">{row.freelancerCount}</td>
+                    <td className="px-4 py-3 text-stone-700">
+                      {row.start && row.end ? `${formatDate(row.start)} → ${formatDate(row.end)}` : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Link to={`/projects/${row.project.id}`} className="rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100">
+                          View
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 align-top text-stone-700"><StatusBadge value={row.project.entity} /></td>
-                      <td className="px-4 py-3 align-top text-stone-700">
-                        <div>{row.project.projectManagerName || '—'}</div>
-                        <div className="max-w-[280px] break-all text-xs text-stone-500">{row.project.projectManagerEmail || '—'}</div>
-                      </td>
-                      <td className="px-4 py-3 align-top text-stone-700">{row.freelancerCount}</td>
-                      <td className="px-4 py-3 align-top text-stone-700">
-                        {row.start && row.end ? `${formatDate(row.start)} → ${formatDate(row.end)}` : '—'}
-                      </td>
-                      <td className="px-4 py-3 align-top">
                         <button
-                          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                          onClick={() => {
-                            if (window.confirm(`Remove ${row.project.projectName} and related allocations?`)) {
-                              removeProject(row.project.id)
-                            }
-                          }}
                           type="button"
+                          onClick={() => void handleRemove(row.project.id)}
+                          disabled={removingId === row.project.id}
+                          className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
                         >
-                          Remove
+                          {removingId === row.project.id ? 'Removing…' : 'Remove'}
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </Panel>
 
       <Modal
         open={isModalOpen}
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsModalOpen(false)
+            setForm(initialForm)
+          }
+        }}
         title="Add project"
-        description="Create a project manually and keep the table area focused on data."
-        onClose={() => setIsModalOpen(false)}
       >
-        <form className="space-y-4" onSubmit={submit}>
-          <Input label="Project name" value={form.projectName} onChange={(value) => setForm((current) => ({ ...current, projectName: value }))} required />
-          <label className="block text-sm text-stone-700">
-            <span className="mb-1 block">Entity</span>
+        <form onSubmit={submit} className="space-y-4">
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-stone-700">Project name</span>
+            <input
+              required
+              value={form.projectName}
+              onChange={(event) => setForm((current) => ({ ...current, projectName: event.target.value }))}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-stone-700">Entity</span>
             <select
-              className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
               value={form.entity}
               onChange={(event) => setForm((current) => ({ ...current, entity: event.target.value as Entity }))}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
             >
               {entityOptions.map((entity) => (
                 <option key={entity} value={entity}>{entity}</option>
               ))}
             </select>
           </label>
-          <Input label="Project manager name" value={form.projectManagerName} onChange={(value) => setForm((current) => ({ ...current, projectManagerName: value }))} />
-          <Input label="Project manager email" type="email" value={form.projectManagerEmail} onChange={(value) => setForm((current) => ({ ...current, projectManagerEmail: value }))} />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {message ? <p className="text-sm text-stone-500">{message}</p> : <span />}
-            <button className="rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]" type="submit">
-              Add project
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-stone-700">Project manager name</span>
+            <input
+              required
+              value={form.projectManagerName}
+              onChange={(event) => setForm((current) => ({ ...current, projectManagerName: event.target.value }))}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-stone-700">Project manager email</span>
+            <input
+              required
+              type="email"
+              value={form.projectManagerEmail}
+              onChange={(event) => setForm((current) => ({ ...current, projectManagerEmail: event.target.value }))}
+              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
+            />
+          </label>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsModalOpen(false)
+                setForm(initialForm)
+              }}
+              className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-60"
+            >
+              {isSubmitting ? 'Saving…' : 'Add project'}
             </button>
           </div>
         </form>
       </Modal>
-    </>
+    </div>
   )
 }
 
-function getSortValue(row: { project: { projectName: string; entity: string; projectManagerName: string }; freelancerCount: number; start: string }, key: SortKey) {
-  switch (key) {
-    case 'projectName':
-      return row.project.projectName.toLowerCase()
-    case 'entity':
-      return row.project.entity.toLowerCase()
-    case 'projectManagerName':
-      return row.project.projectManagerName.toLowerCase()
-    case 'freelancerCount':
-      return row.freelancerCount
-    case 'dateRange':
-      return row.start || '9999-12-31'
-  }
-}
-
-function SortableHeader({ label, active, direction, onClick }: { label: string; active: boolean; direction: SortDirection; onClick: () => void }) {
+function SortableHeader({
+  label,
+  active,
+  direction,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  direction: 'asc' | 'desc'
+  onClick: () => void
+}) {
   return (
-    <th className="sticky top-0 bg-[#f8f3ea]/95 px-4 py-3 font-medium">
-      <button className="inline-flex items-center gap-2 text-left transition hover:text-stone-900" onClick={onClick} type="button">
+    <th className="whitespace-nowrap px-4 py-3 font-medium">
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1 text-left hover:text-stone-900">
         <span>{label}</span>
-        <span className={active ? 'text-brand-700' : 'text-stone-400'}>{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+        <span className="text-xs text-stone-400">{active ? (direction === 'asc' ? '↑' : '↓') : '↕'}</span>
       </button>
     </th>
   )
 }
 
-function Input({ label, value, onChange, type = 'text', required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
-  return (
-    <label className="block text-sm text-stone-700">
-      <span className="mb-1 block">{label}</span>
-      <input
-        className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-stone-900"
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        required={required}
-      />
-    </label>
-  )
+function getSortValue(
+  row: { project: { projectName: string; entity: string; projectManagerName: string }; freelancerCount: number; start: string; end: string },
+  key: SortKey,
+) {
+  if (key === 'projectName') return row.project.projectName
+  if (key === 'entity') return row.project.entity
+  if (key === 'projectManagerName') return row.project.projectManagerName
+  if (key === 'freelancerCount') return row.freelancerCount
+  return `${row.start}-${row.end}`
 }

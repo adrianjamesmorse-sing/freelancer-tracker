@@ -1,13 +1,18 @@
-export function json(data: unknown, init: ResponseInit = {}): Response {
-  return new Response(JSON.stringify(data), {
-    ...init,
+import type { HttpResponseInit } from '@azure/functions'
+
+export function json(status: number, body: unknown): HttpResponseInit {
+  return {
+    status,
+    jsonBody: body,
     headers: {
       'content-type': 'application/json',
-      ...(init.headers ?? {}),
     },
-  })
+  }
 }
 
-export function error(message: string, status = 400): Response {
-  return json({ error: message }, { status })
+export function error(status: number, message: string, details?: unknown): HttpResponseInit {
+  return json(status, {
+    error: message,
+    ...(details !== undefined ? { details } : {}),
+  })
 }

@@ -5,3 +5,4 @@ dist
 # ignore ps1 files
 *.ps1
 api/local.settings.json
+api/node_modules

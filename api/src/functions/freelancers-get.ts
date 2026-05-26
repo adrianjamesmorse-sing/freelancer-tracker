@@ -1,37 +1,25 @@
-import { app } from '@azure/functions'
-import { getPool } from '../lib/db.js'
-import { json, error } from '../lib/response.js'
+import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions'
+import { query } from '../lib/db.js'
+import { error, json } from '../lib/response.js'
 
 app.http('freelancers-get', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'freelancers',
-  handler: async () => {
+  handler: async (_request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     try {
-      const pool = getPool()
-      const result = await pool.query(
+      const result = await query(
         `
-        select
-          id,
-          created_at,
-          freelancer_name,
-          personal_email,
-          phone_number,
-          address,
-          country,
-          freelancer_status,
-          registration_number,
-          question_flag,
-          comments
+        select id, created_at, freelancer_name, personal_email, phone_number, address, country,
+               freelancer_status, registration_number, question_flag, comments
         from freelancers
         order by freelancer_name asc
         `,
       )
-
-      return json(result.rows)
+      return json(200, result.rows)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      return error(message, 500)
+      context.error(err)
+      return error(500, 'Failed to load freelancers', err instanceof Error ? err.message : String(err))
     }
   },
 })

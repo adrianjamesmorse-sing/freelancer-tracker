@@ -1,21 +1,27 @@
-import { Pool } from 'pg'
+import { Pool, type QueryResult, type QueryResultRow } from 'pg'
 
-let cachedPool: Pool | null = null
+let pool: Pool | undefined
 
 export function getPool(): Pool {
-  if (cachedPool) return cachedPool
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL
 
-  const connectionString = process.env.DATABASE_URL
+    if (!connectionString) {
+      throw new Error('DATABASE_URL is not set')
+    }
 
-  if (!connectionString) {
-    throw new Error('DATABASE_URL is not configured')
+    pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+    })
   }
 
-  cachedPool = new Pool({
-    connectionString,
-    ssl: { rejectUnauthorized: false },
-    max: 5,
-  })
+  return pool
+}
 
-  return cachedPool
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params: unknown[] = [],
+): Promise<QueryResult<T>> {
+  return getPool().query<T>(text, params)
 }

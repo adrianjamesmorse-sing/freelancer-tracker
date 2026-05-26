@@ -41,6 +41,7 @@ export function FreelancersPage() {
   const [statusFilter, setStatusFilter] = useState<'All' | FreelancerStatus>('All')
   const [sortKey, setSortKey] = useState<SortKey>('freelancerName')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [isSaving, setIsSaving] = useState(false)
 
   const rows = useMemo<FreelancerRow[]>(() => freelancers.map((freelancer) => {
     const items = getAllocationsForFreelancer(freelancer.id)
@@ -81,12 +82,14 @@ export function FreelancersPage() {
     return filtered
   }, [rows, search, statusFilter, sortKey, sortDirection])
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setIsSaving(true)
     const result = editingFreelancer
-      ? updateFreelancer(editingFreelancer.id, form)
-      : addFreelancer(form)
+      ? await updateFreelancer(editingFreelancer.id, form)
+      : await addFreelancer(form)
     setMessage(result.message)
+    setIsSaving(false)
     if (result.success) {
       setForm(initialForm)
       setEditingFreelancer(null)
@@ -116,6 +119,15 @@ export function FreelancersPage() {
       comments: freelancer.comments,
     })
     setIsModalOpen(true)
+  }
+
+  const handleRemove = async (freelancer: Freelancer) => {
+    if (!window.confirm(`Remove ${freelancer.freelancerName} and their related allocations?`)) return
+    try {
+      await removeFreelancer(freelancer.id)
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed to remove freelancer.')
+    }
   }
 
   const toggleSort = (key: SortKey) => {
@@ -210,11 +222,7 @@ export function FreelancersPage() {
                           </button>
                           <button
                             className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                            onClick={() => {
-                              if (window.confirm(`Remove ${row.freelancer.freelancerName} and their related allocations?`)) {
-                                removeFreelancer(row.freelancer.id)
-                              }
-                            }}
+                            onClick={() => void handleRemove(row.freelancer)}
                             type="button"
                           >
                             Remove
@@ -241,7 +249,7 @@ export function FreelancersPage() {
           setMessage('')
         }}
       >
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="space-y-4" onSubmit={(event) => void submit(event)}>
           <Input label="Freelancer name" value={form.freelancerName} onChange={(value) => setForm((current) => ({ ...current, freelancerName: value }))} required />
           <Input label="Personal email" type="email" value={form.personalEmail} onChange={(value) => setForm((current) => ({ ...current, personalEmail: value }))} required />
           <Input label="Phone number" value={form.phoneNumber} onChange={(value) => setForm((current) => ({ ...current, phoneNumber: value }))} />
@@ -279,8 +287,8 @@ export function FreelancersPage() {
           </label>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {message ? <p className="text-sm text-stone-500">{message}</p> : <span />}
-            <button className="rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]" type="submit">
-              {editingFreelancer ? 'Save changes' : 'Add freelancer'}
+            <button className="rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb] disabled:cursor-not-allowed disabled:opacity-60" disabled={isSaving} type="submit">
+              {isSaving ? 'Saving...' : editingFreelancer ? 'Save changes' : 'Add freelancer'}
             </button>
           </div>
         </form>

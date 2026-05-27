@@ -29,10 +29,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build app
+      - name: Build frontend
         run: npm run build
 
       - name: Get Id Token
@@ -52,6 +52,13 @@ jobs:
           app_location: "dist"
           output_location: ""
           skip_app_build: true
+          api_location: "api"
+          api_build_command: |
+            npm install
+            npm run build
+            mv dist/* . || true
+            rmdir dist || true
+            ls -la
           github_id_token: ${{ steps.idtoken.outputs.result }}
 
   close_pull_request_job:

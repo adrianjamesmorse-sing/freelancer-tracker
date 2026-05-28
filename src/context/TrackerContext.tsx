@@ -16,9 +16,10 @@ import {
   fetchAllocations,
   fetchFreelancers,
   fetchProjects,
+  importFormsFreelancersCsv,
   updateFreelancer as updateFreelancerApi,
 } from '../lib/api'
-import { mapCsvRows, normalizeKey } from '../lib/csv'
+import { normalizeKey } from '../lib/csv'
 import { inferCountryFromAddress } from '../lib/geo'
 import { daysUntil } from '../lib/format'
 import type {
@@ -99,6 +100,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
       return seed
     }
   })
+
   const [isFreelancersLoaded, setIsFreelancersLoaded] = useState(false)
   const [isProjectsLoaded, setIsProjectsLoaded] = useState(false)
   const [isAllocationsLoaded, setIsAllocationsLoaded] = useState(false)
@@ -107,6 +109,27 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     if (typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
   }, [store])
+
+  const refreshFreelancers = async () => {
+    const freelancers = await fetchFreelancers()
+    setStore((current) => ({
+      ...current,
+      freelancers: freelancers.map((item) => ({
+        ...item,
+        country: item.country || inferCountryFromAddress(item.address) || '',
+      })),
+    }))
+  }
+
+  const refreshProjects = async () => {
+    const projects = await fetchProjects()
+    setStore((current) => ({ ...current, projects }))
+  }
+
+  const refreshAllocations = async () => {
+    const allocations = await fetchAllocations()
+    setStore((current) => ({ ...current, allocations }))
+  }
 
   useEffect(() => {
     let isCancelled = false
@@ -158,8 +181,14 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     }
   }, [])
 
-  const freelancerMap = useMemo(() => new Map(store.freelancers.map((item) => [item.id, item])), [store.freelancers])
-  const projectMap = useMemo(() => new Map(store.projects.map((item) => [item.id, item])), [store.projects])
+  const freelancerMap = useMemo(
+    () => new Map(store.freelancers.map((item) => [item.id, item])),
+    [store.freelancers],
+  )
+  const projectMap = useMemo(
+    () => new Map(store.projects.map((item) => [item.id, item])),
+    [store.projects],
+  )
 
   const enrichedAllocations = useMemo(
     () =>
@@ -253,7 +282,9 @@ export function TrackerProvider({ children }: PropsWithChildren) {
 
         const key = normalizeFreelancerKey(preparedInput.freelancerName, preparedInput.personalEmail)
         const duplicate = store.freelancers.find(
-          (item) => item.id !== id && normalizeFreelancerKey(item.freelancerName, item.personalEmail) === key,
+          (item) =>
+            item.id !== id &&
+            normalizeFreelancerKey(item.freelancerName, item.personalEmail) === key,
         )
         if (duplicate) {
           return {
@@ -287,12 +318,17 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         await deleteFreelancer(id)
 
         setStore((current) => {
-          const allocationIds = current.allocations.filter((item) => item.freelancerId === id).map((item) => item.id)
+          const allocationIds = current.allocations
+            .filter((item) => item.freelancerId === id)
+            .map((item) => item.id)
+
           return {
             ...current,
             freelancers: current.freelancers.filter((item) => item.id !== id),
             allocations: current.allocations.filter((item) => item.freelancerId !== id),
-            notifications: current.notifications.filter((item) => !allocationIds.includes(item.allocationId)),
+            notifications: current.notifications.filter(
+              (item) => !allocationIds.includes(item.allocationId),
+            ),
           }
         })
       } catch (err) {
@@ -320,12 +356,17 @@ export function TrackerProvider({ children }: PropsWithChildren) {
       try {
         await deleteProjectApi(id)
         setStore((current) => {
-          const allocationIds = current.allocations.filter((item) => item.projectId === id).map((item) => item.id)
+          const allocationIds = current.allocations
+            .filter((item) => item.projectId === id)
+            .map((item) => item.id)
+
           return {
             ...current,
             projects: current.projects.filter((item) => item.id !== id),
             allocations: current.allocations.filter((item) => item.projectId !== id),
-            notifications: current.notifications.filter((item) => !allocationIds.includes(item.allocationId)),
+            notifications: current.notifications.filter(
+              (item) => !allocationIds.includes(item.allocationId),
+            ),
           }
         })
       } catch (err) {
@@ -367,7 +408,9 @@ export function TrackerProvider({ children }: PropsWithChildren) {
 
         const allocation = await createAllocationApi(input)
 
-        const joinRule = store.notificationRules.find((rule) => rule.triggerType === 'join' && rule.enabled)
+        const joinRule = store.notificationRules.find(
+          (rule) => rule.triggerType === 'join' && rule.enabled,
+        )
         const rendered = joinRule
           ? renderNotificationRule(joinRule, { freelancer, project, allocation })
           : {
@@ -431,7 +474,9 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     updateNotificationRule: (id, input) => {
       setStore((current) => ({
         ...current,
-        notificationRules: current.notificationRules.map((item) => (item.id === id ? { ...item, ...input } : item)),
+        notificationRules: current.notificationRules.map((item) =>
+          item.id === id ? { ...item, ...input } : item,
+        ),
       }))
       return { success: true, message: 'Notification rule updated.' }
     },
@@ -450,147 +495,27 @@ export function TrackerProvider({ children }: PropsWithChildren) {
       }))
     },
     importCsvFile: async (file) => {
-      const buffer = await file.arrayBuffer()
-      const text = decodeCsvBuffer(buffer)
-      const rows = mapCsvRows(text)
+      const summary = await importFormsFreelancersCsv(file)
 
-      const summary: CsvImportSummary = {
-        fileName: file.name,
-        processedRows: rows.length,
-        addedFreelancers: 0,
-        updatedFreelancers: 0,
-        addedProjects: 0,
-        updatedProjects: 0,
-        addedAllocations: 0,
-        skippedAllocations: 0,
-        errors: [],
-        importedAt: new Date().toISOString(),
-      }
+      await Promise.all([
+        refreshFreelancers(),
+        refreshProjects(),
+        refreshAllocations(),
+      ])
 
-      setStore((current) => {
-        const nextFreelancers = [...current.freelancers]
-        const nextProjects = [...current.projects]
-        const nextAllocations = [...current.allocations]
-
-        for (const row of rows) {
-          if (!row.freelancerName || !row.projectName) {
-            summary.errors.push('Skipped a row without freelancer name or project name.')
-            continue
-          }
-
-          const freelancerKey = normalizeFreelancerKey(row.freelancerName, row.personalEmail ?? '')
-          let freelancer = nextFreelancers.find(
-            (item) => normalizeFreelancerKey(item.freelancerName, item.personalEmail) === freelancerKey,
-          )
-
-          if (!freelancer) {
-            freelancer = {
-              id: makeId('freelancer'),
-              createdAt: row.timestamp || new Date().toISOString(),
-              freelancerName: row.freelancerName,
-              personalEmail: row.personalEmail ?? '',
-              phoneNumber: row.phoneNumber ?? '',
-              address: row.address ?? '',
-              country: row.country ?? inferCountryFromAddress(row.address) ?? '',
-              freelancerStatus: row.freelancerStatus ?? 'Active',
-              registrationNumber: row.registrationNumber ?? false,
-              questionFlag: row.questionFlag ?? false,
-              comments: row.comments ?? '',
-            }
-            nextFreelancers.push(freelancer)
-            summary.addedFreelancers += 1
-          } else {
-            const before = JSON.stringify(freelancer)
-            freelancer.personalEmail = row.personalEmail || freelancer.personalEmail
-            freelancer.phoneNumber = row.phoneNumber || freelancer.phoneNumber
-            freelancer.address = row.address || freelancer.address
-            freelancer.country = row.country || inferCountryFromAddress(row.address) || freelancer.country
-            freelancer.freelancerStatus = row.freelancerStatus || freelancer.freelancerStatus
-            freelancer.registrationNumber = row.registrationNumber ?? freelancer.registrationNumber
-            freelancer.questionFlag = row.questionFlag ?? freelancer.questionFlag
-            freelancer.comments = row.comments || freelancer.comments
-            if (JSON.stringify(freelancer) !== before) summary.updatedFreelancers += 1
-          }
-
-          const projectKey = normalizeProjectKey(row.projectName, row.entity ?? 'Unspecified')
-          let project = nextProjects.find((item) => normalizeProjectKey(item.projectName, item.entity) === projectKey)
-
-          if (!project) {
-            project = {
-              id: makeId('project'),
-              projectName: row.projectName,
-              entity: row.entity ?? 'Unspecified',
-              projectManagerName: row.projectManagerName ?? '',
-              projectManagerEmail: row.projectManagerEmail ?? '',
-            }
-            nextProjects.push(project)
-            summary.addedProjects += 1
-          } else {
-            const before = JSON.stringify(project)
-            project.projectManagerName = row.projectManagerName || project.projectManagerName
-            project.projectManagerEmail = row.projectManagerEmail || project.projectManagerEmail
-            if (JSON.stringify(project) !== before) summary.updatedProjects += 1
-          }
-
-          const duplicate = nextAllocations.find(
-            (item) =>
-              (row.id && item.sourceRowId === row.id) ||
-              normalizeAllocationKey(
-                item.freelancerId,
-                item.projectId,
-                item.contractStartDate,
-                item.contractEndDate,
-                item.roleWithinProject,
-              ) ===
-                normalizeAllocationKey(
-                  freelancer.id,
-                  project.id,
-                  row.contractStartDate,
-                  row.contractEndDate,
-                  row.roleWithinProject,
-                ),
-          )
-
-          if (duplicate) {
-            summary.skippedAllocations += 1
-            continue
-          }
-
-          nextAllocations.push({
-            id: makeId('allocation'),
-            createdAt: row.timestamp || new Date().toISOString(),
-            freelancerId: freelancer.id,
-            projectId: project.id,
-            contractStartDate: row.contractStartDate || new Date().toISOString().slice(0, 10),
-            contractEndDate: row.contractEndDate || new Date().toISOString().slice(0, 10),
-            numberOfDays: row.numberOfDays ?? 0,
-            dailyRate: row.dailyRate ?? 0,
-            dailyRateCurrency: row.dailyRateCurrency ?? 'EUR',
-            dailyRateNote: row.dailyRateNote ?? '',
-            roleWithinProject: row.roleWithinProject ?? '',
-            ownerManagerName: row.projectManagerName ?? project.projectManagerName,
-            ownerManagerEmail: row.projectManagerEmail ?? project.projectManagerEmail,
-            allocationStatus: row.contractEndDate && daysUntil(row.contractEndDate) < 0 ? 'Closed' : 'Active',
-            sourceRowId: row.id,
-          })
-          summary.addedAllocations += 1
-        }
-
-        return {
-          ...current,
-          freelancers: nextFreelancers,
-          projects: nextProjects,
-          allocations: nextAllocations,
-          lastImportSummary: summary,
-        }
-      })
+      setStore((current) => ({
+        ...current,
+        lastImportSummary: summary,
+      }))
 
       return summary
     },
     getFreelancerById: (id) => freelancerMap.get(id),
     getProjectById: (id) => projectMap.get(id),
-    getAllocationsForFreelancer: (freelancerId) => store.allocations.filter((item) => item.freelancerId === freelancerId),
-    getAllocationsForProject: (projectId) => store.allocations.filter((item) => item.projectId === projectId),
+    getAllocationsForFreelancer: (freelancerId) =>
+      store.allocations.filter((item) => item.freelancerId === freelancerId),
+    getAllocationsForProject: (projectId) =>
+      store.allocations.filter((item) => item.projectId === projectId),
   }
 
   return <TrackerContext.Provider value={value}>{children}</TrackerContext.Provider>
@@ -627,15 +552,6 @@ function ensureStoreShape(value: Partial<TrackerStore>, seed: TrackerStore): Tra
   }
 }
 
-function decodeCsvBuffer(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  try {
-    return new TextDecoder('windows-1252').decode(bytes)
-  } catch {
-    return new TextDecoder().decode(bytes)
-  }
-}
-
 function normalizeFreelancerKey(name: string, email: string): string {
   return normalizeKey(name, email)
 }
@@ -651,7 +567,13 @@ function normalizeAllocationKey(
   contractEndDate?: string,
   roleWithinProject?: string,
 ): string {
-  return normalizeKey(freelancerId, projectId, contractStartDate, contractEndDate, roleWithinProject)
+  return normalizeKey(
+    freelancerId,
+    projectId,
+    contractStartDate,
+    contractEndDate,
+    roleWithinProject,
+  )
 }
 
 function makeId(prefix: string): string {
@@ -665,8 +587,12 @@ function resolveRecipientPreview(
 ): string[] {
   const recipients = new Set<string>()
   for (const recipient of rule.recipientTypes) {
-    if (recipient === 'Owner manager' && allocation.ownerManagerEmail) recipients.add(allocation.ownerManagerEmail)
-    if (recipient === 'Project manager' && project.projectManagerEmail) recipients.add(project.projectManagerEmail)
+    if (recipient === 'Owner manager' && allocation.ownerManagerEmail) {
+      recipients.add(allocation.ownerManagerEmail)
+    }
+    if (recipient === 'Project manager' && project.projectManagerEmail) {
+      recipients.add(project.projectManagerEmail)
+    }
     if (recipient === 'Ops') recipients.add('ops@squadigital.com')
     if (recipient === 'Finance') recipients.add('finance@squadigital.com')
     if (recipient === 'Custom recipients') {
@@ -689,6 +615,7 @@ function renderNotificationRule(
     endDate: params.allocation.contractEndDate,
     role: params.allocation.roleWithinProject,
   }
+
   return {
     subject: renderTemplate(rule.subject, tokens),
     body: renderTemplate(rule.body, tokens),

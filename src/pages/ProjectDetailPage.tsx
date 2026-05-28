@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Panel } from '../components/Panel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -24,34 +24,37 @@ export function ProjectDetailPage() {
 
   const allocations = project ? getAllocationsForProject(project.id) : []
   const availableFreelancers = useMemo(
-    () => freelancers.slice().sort((a, b) => a.freelancerName.localeCompare(b.freelancerName)),
+    () => freelancers
+      .filter((item) => item.freelancerStatus !== 'Inactive')
+      .slice()
+      .sort((a, b) => a.freelancerName.localeCompare(b.freelancerName)),
     [freelancers],
   )
 
-  const defaultFreelancerId = availableFreelancers[0]?.id ?? ''
+  const buildInitialForm = (): NewAllocationInput => ({
+    freelancerId: availableFreelancers[0]?.id ?? '',
+    projectId: project?.id ?? '',
+    contractStartDate: new Date().toISOString().slice(0, 10),
+    contractEndDate: new Date().toISOString().slice(0, 10),
+    numberOfDays: 0,
+    dailyRate: 0,
+    dailyRateCurrency: 'EUR',
+    dailyRateNote: '',
+    roleWithinProject: '',
+    ownerManagerName: project?.projectManagerName ?? '',
+    ownerManagerEmail: project?.projectManagerEmail ?? '',
+    allocationStatus: 'Active',
+  })
 
-  const initialForm = useMemo<NewAllocationInput>(
-    () => ({
-      freelancerId: defaultFreelancerId,
-      projectId: project?.id ?? '',
-      contractStartDate: new Date().toISOString().slice(0, 10),
-      contractEndDate: new Date().toISOString().slice(0, 10),
-      numberOfDays: 0,
-      dailyRate: 0,
-      dailyRateCurrency: 'EUR',
-      dailyRateNote: '',
-      roleWithinProject: '',
-      ownerManagerName: project?.projectManagerName ?? '',
-      ownerManagerEmail: project?.projectManagerEmail ?? '',
-      allocationStatus: 'Active',
-    }),
-    [defaultFreelancerId, project],
-  )
-
-  const [form, setForm] = useState<NewAllocationInput>(initialForm)
+  const [form, setForm] = useState<NewAllocationInput>(buildInitialForm())
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!project) return
+    setForm(buildInitialForm())
+  }, [project?.id, availableFreelancers[0]?.id])
 
   if (!isReady) {
     return (
@@ -73,10 +76,15 @@ export function ProjectDetailPage() {
     event.preventDefault()
     setIsSubmitting(true)
     try {
-      const result = await addAllocation({ ...form, projectId: project.id, ownerManagerName: project.projectManagerName, ownerManagerEmail: project.projectManagerEmail })
+      const result = await addAllocation({
+        ...form,
+        projectId: project.id,
+        ownerManagerName: project.projectManagerName,
+        ownerManagerEmail: project.projectManagerEmail,
+      })
       setMessage(result.message)
       if (result.success) {
-        setForm({ ...initialForm, freelancerId: availableFreelancers[0]?.id ?? '' })
+        setForm(buildInitialForm())
       }
     } finally {
       setIsSubmitting(false)
@@ -226,11 +234,13 @@ export function ProjectDetailPage() {
                 <span className="text-sm font-medium text-stone-700">Currency</span>
                 <select
                   value={form.dailyRateCurrency}
-                  onChange={(event) => setForm((current) => ({ ...current, dailyRateCurrency: event.target.value as 'EUR' | 'GBP' }))}
+                  onChange={(event) => setForm((current) => ({ ...current, dailyRateCurrency: event.target.value as 'EUR' | 'GBP' | 'USD' | 'CHF', }))}
                   className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
                 >
                   <option value="EUR">EUR</option>
                   <option value="GBP">GBP</option>
+                  <option value="USD">USD</option>
+                  <option value="CHF">CHF</option>
                 </select>
               </label>
             </div>
@@ -247,7 +257,7 @@ export function ProjectDetailPage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || availableFreelancers.length === 0}
                 className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-60"
               >
                 {isSubmitting ? 'Saving…' : 'Add freelancer'}

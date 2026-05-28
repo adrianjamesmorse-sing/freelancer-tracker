@@ -1,5 +1,6 @@
 import type {
   Allocation,
+  CsvImportSummary,
   Freelancer,
   NewAllocationInput,
   NewFreelancerInput,
@@ -148,8 +149,6 @@ function allocationPayload(input: NewAllocationInput) {
   }
 }
 
-// Freelancers
-
 export async function fetchFreelancers(): Promise<Freelancer[]> {
   const response = await fetch(`${API_BASE}/freelancers`)
   const rows = await parseJson<ApiFreelancerRow[]>(response)
@@ -166,10 +165,7 @@ export async function createFreelancer(input: NewFreelancerInput): Promise<Freel
   return mapFreelancer(row)
 }
 
-export async function updateFreelancer(
-  id: string,
-  input: NewFreelancerInput,
-): Promise<Freelancer> {
+export async function updateFreelancer(id: string, input: NewFreelancerInput): Promise<Freelancer> {
   const response = await fetch(`${API_BASE}/freelancers/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -180,17 +176,12 @@ export async function updateFreelancer(
 }
 
 export async function deleteFreelancer(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/freelancers/${id}`, {
-    method: 'DELETE',
-  })
-
+  const response = await fetch(`${API_BASE}/freelancers/${id}`, { method: 'DELETE' })
   if (!response.ok) {
     const text = await response.text()
     throw new Error(text || `Delete freelancer failed with status ${response.status}`)
   }
 }
-
-// Projects
 
 export async function fetchProjects(): Promise<Project[]> {
   const response = await fetch(`${API_BASE}/projects`)
@@ -219,17 +210,12 @@ export async function updateProject(id: string, input: NewProjectInput): Promise
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/projects/${id}`, {
-    method: 'DELETE',
-  })
-
+  const response = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' })
   if (!response.ok) {
     const text = await response.text()
     throw new Error(text || `Delete project failed with status ${response.status}`)
   }
 }
-
-// Allocations
 
 export async function fetchAllocations(): Promise<Allocation[]> {
   const response = await fetch(`${API_BASE}/allocations`)
@@ -247,10 +233,7 @@ export async function createAllocation(input: NewAllocationInput): Promise<Alloc
   return mapAllocation(row)
 }
 
-export async function updateAllocation(
-  id: string,
-  input: NewAllocationInput,
-): Promise<Allocation> {
+export async function updateAllocation(id: string, input: NewAllocationInput): Promise<Allocation> {
   const response = await fetch(`${API_BASE}/allocations/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -261,12 +244,29 @@ export async function updateAllocation(
 }
 
 export async function deleteAllocation(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/allocations/${id}`, {
-    method: 'DELETE',
-  })
-
+  const response = await fetch(`${API_BASE}/allocations/${id}`, { method: 'DELETE' })
   if (!response.ok) {
     const text = await response.text()
     throw new Error(text || `Delete allocation failed with status ${response.status}`)
   }
+}
+
+export async function importFormsFreelancersCsv(file: File): Promise<CsvImportSummary> {
+  const bytes = await file.arrayBuffer()
+  const base64 = btoa(
+    Array.from(new Uint8Array(bytes))
+      .map((byte) => String.fromCharCode(byte))
+      .join(''),
+  )
+
+  const response = await fetch(`${API_BASE}/imports/forms-freelancers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileName: file.name,
+      csvBase64: base64,
+    }),
+  })
+
+  return parseJson<CsvImportSummary>(response)
 }

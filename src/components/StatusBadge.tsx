@@ -27,6 +27,7 @@ const statusStyles: Record<string, string> = {
   end_1_day: 'bg-[#f1dfd6] text-[#855243] ring-[#e3c6ba]',
   still_open_weekly: 'bg-[#e8e0e7] text-[#6f5768] ring-[#d8cad5]',
   custom: 'bg-[#ece5db] text-[#6f655a] ring-[#ddd3c7]',
+  'Squadigital DE': 'bg-[#e6e4db] text-[#5a574e] ring-[#d7d2c6]',
 }
 
 export function StatusBadge({ value }: StatusBadgeProps) {

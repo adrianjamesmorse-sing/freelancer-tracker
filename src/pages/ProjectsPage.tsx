@@ -9,7 +9,7 @@ import type { Entity, NewProjectInput } from '../types'
 type SortKey = 'projectName' | 'entity' | 'projectManagerName' | 'freelancerCount' | 'dateRange'
 type SortDirection = 'asc' | 'desc'
 
-const entityOptions: Entity[] = ['Squadigital FR', 'Squadigital UK', 'Squadigital GE', 'JV', 'Unspecified']
+const entityOptions: Entity[] = ['Squadigital FR', 'Squadigital UK', 'Squadigital GE', 'Squadigital DE', 'JV', 'Unspecified']
 
 const initialForm: NewProjectInput = {
   projectName: '',

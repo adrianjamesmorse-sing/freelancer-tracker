@@ -7,25 +7,25 @@ type ImportInput = {
 }
 
 type CanonicalRow = {
-  id?: string
   startTime?: string
   endTime?: string
   submitterEmail?: string
   submitterName?: string
-  projectManagerName?: string
   freelancerName?: string
   projectName?: string
   entity?: string
   contractStartDate?: string
   contractEndDate?: string
   numberOfDays?: string
-  dailyRateNote?: string
-  dailyRateCurrency?: string
+  dailyRate?: string
   roleWithinProject?: string
   registrationNumber?: string
+  registrationNote?: string
   freelancerEmail?: string
   phoneNumber?: string
   questionFlag?: string
+  dailyRateCurrency?: string
+  freelancerEmailAlt?: string
   comments?: string
 }
 
@@ -54,38 +54,37 @@ function normalizeHeader(value: string): string {
 }
 
 const headerAliases: Record<string, keyof CanonicalRow> = {
-  id: 'id',
   starttime: 'startTime',
   endtime: 'endTime',
   emailaddress: 'submitterEmail',
   name: 'submitterName',
-  yourname: 'projectManagerName',
-  completenameofthefreelanceregantoinedupont: 'freelancerName',
-  freelancername: 'freelancerName',
-  nameoftheprojectegddemkcapitalpeach: 'projectName',
-  projectname: 'projectName',
+
+  completenameofthefreelancer: 'freelancerName',
+  nameoftheproject: 'projectName',
   onwhichentityisthisprojectbilled: 'entity',
   startingdateoftheproject: 'contractStartDate',
   enddateoftheproject: 'contractEndDate',
   numberofdaysthefreelancerwillworkontheproject: 'numberOfDays',
-  dailyratewiththecurrencyeg1000: 'dailyRateNote',
-  whichcurrencyforthedailyrate: 'dailyRateCurrency',
-  rolewithintheprojectmanagerseniorconsultantetc: 'roleWithinProject',
-  hasthisfreelanceralreadybeenregisteredwitharegistrationnumber: 'registrationNumber',
+
+  dailyrate: 'dailyRate',
+  rolewithintheproject: 'roleWithinProject',
+
+  haveyouensuredthatthefreelancerhasaregistrationnumberautoentrepriseorcompany: 'registrationNumber',
+  pleasenotethatifanswerisnowewontbeabletoprovideacontract: 'registrationNote',
+
   freelancersemailadress: 'freelancerEmail',
-  freelanceremailaddress: 'freelancerEmail',
   freelancerphonenumber: 'phoneNumber',
   question: 'questionFlag',
+  whichcurrencyforthedailyrate: 'dailyRateCurrency',
+  freelanceremailaddress: 'freelancerEmailAlt',
   anycomments: 'comments',
 }
 
 function decodeInput(input: ImportInput): string {
   if (input.csvText) return input.csvText
-
   if (!input.csvBase64) {
     throw new Error('csvText or csvBase64 is required')
   }
-
   return Buffer.from(input.csvBase64, 'base64').toString('utf8')
 }
 
@@ -184,7 +183,7 @@ function parseDate(value?: string): string | null {
 function parseNumberOfDays(value?: string): number | null {
   if (!value) return null
   const match = value.match(/(\d+(\.\d+)?)/)
-  return match ? Math.round(Number(match[1])) : null
+  return match ? Number(match[1]) : null
 }
 
 function parseDailyRate(value?: string): number | null {
@@ -199,6 +198,25 @@ function cleanEntity(value?: string): string {
   const v = (value ?? '').trim()
   if (!v || ['yes', 'no'].includes(v.toLowerCase())) return 'Unspecified'
   return v
+}
+
+function normalizeCurrency(value?: string): 'EUR' | 'GBP' | 'USD' | 'CHF' | null {
+  const v = (value ?? '').trim().toUpperCase()
+
+  if (!v) return null
+  if (v === 'EURO') return 'EUR'
+  if (v === 'EUR') return 'EUR'
+  if (v === 'GBP') return 'GBP'
+  if (v === 'USD') return 'USD'
+  if (v === 'CHF') return 'CHF'
+
+  return null
+}
+
+function pickFreelancerEmail(row: CanonicalRow): string | null {
+  const primary = (row.freelancerEmail ?? '').trim()
+  const secondary = (row.freelancerEmailAlt ?? '').trim()
+  return primary || secondary || null
 }
 
 export async function importFormsFreelancers(input: ImportInput): Promise<ImportSummary> {
@@ -238,9 +256,12 @@ export async function importFormsFreelancers(input: ImportInput): Promise<Import
       continue
     }
 
-    const freelancerEmail = (row.freelancerEmail ?? '').trim() || null
+    const freelancerEmail = pickFreelancerEmail(row)
     const phoneNumber = (row.phoneNumber ?? '').trim() || null
-    const comments = (row.comments ?? '').trim() || null
+    const comments = [row.registrationNote, row.comments]
+      .map((item) => (item ?? '').trim())
+      .filter(Boolean)
+      .join(' | ') || null
     const registrationNumber = parseBool(row.registrationNumber)
     const questionFlag = parseBool(row.questionFlag)
 
@@ -315,7 +336,7 @@ export async function importFormsFreelancers(input: ImportInput): Promise<Import
     }
 
     const entity = cleanEntity(row.entity)
-    const projectManagerName = (row.projectManagerName ?? '').trim() || 'Unknown'
+    const projectManagerName = (row.submitterName ?? '').trim() || 'Unknown'
     const projectManagerEmail = (row.submitterEmail ?? '').trim() || 'unknown@singulier.co'
     const status = new Date(endDate) < new Date() ? 'Ended' : 'Active'
 
@@ -362,9 +383,9 @@ export async function importFormsFreelancers(input: ImportInput): Promise<Import
 
     const roleWithinProject = (row.roleWithinProject ?? '').trim() || null
     const numberOfDays = parseNumberOfDays(row.numberOfDays)
-    const dailyRate = parseDailyRate(row.dailyRateNote)
-    const dailyRateCurrency = (row.dailyRateCurrency ?? '').trim() || null
-    const dailyRateNote = (row.dailyRateNote ?? '').trim() || null
+    const dailyRate = parseDailyRate(row.dailyRate)
+    const dailyRateCurrency = normalizeCurrency(row.dailyRateCurrency)
+
 
     const allocationLookup = await query<{ id: string }>(
       `select id
@@ -406,7 +427,7 @@ export async function importFormsFreelancers(input: ImportInput): Promise<Import
         numberOfDays,
         dailyRate,
         dailyRateCurrency,
-        dailyRateNote,
+        null,
         roleWithinProject,
         projectManagerName,
         projectManagerEmail,

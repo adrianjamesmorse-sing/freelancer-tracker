@@ -5,7 +5,7 @@ import { StatCard } from '../components/StatCard'
 import { useTrackerData } from '../hooks/useTrackerData'
 import { formatMoney } from '../lib/format'
 
-type Currency = 'EUR' | 'GBP'
+type Currency = 'EUR' | 'GBP' | 'USD' | 'CHF'
 
 type FinancialRow = {
   key: string
@@ -30,9 +30,35 @@ export function FinancialsPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Estimated EUR spend" value={formatMoney(Math.round(summary.currencyTotals.EUR), 'EUR')} hint="Filtered to the selected period." tone="brand" icon={<Icon name="coins" className="h-5 w-5" />} />
-        <StatCard label="Estimated GBP spend" value={formatMoney(Math.round(summary.currencyTotals.GBP), 'GBP')} hint="Native currency totals without FX conversion." tone="olive" icon={<Icon name="chart" className="h-5 w-5" />} />
-        <StatCard label="Active freelancers" value={summary.activeFreelancers} hint="Unique freelancers contributing in the period." tone="sand" icon={<Icon name="users" className="h-5 w-5" />} />
+        <StatCard
+  label="Estimated EUR spend"
+  value={formatMoney(Math.round(summary.currencyTotals.EUR), 'EUR')}
+  hint="Filtered to the selected period."
+  tone="brand"
+  icon={<Icon name="coins" className="h-5 w-5" />}
+/>
+<StatCard
+  label="Estimated GBP spend"
+  value={formatMoney(Math.round(summary.currencyTotals.GBP), 'GBP')}
+  hint="Native currency totals without FX conversion."
+  tone="olive"
+  icon={<Icon name="chart" className="h-5 w-5" />}
+/>
+<StatCard
+  label="Estimated USD spend"
+  value={formatMoney(Math.round(summary.currencyTotals.USD), 'USD')}
+  hint="Native currency totals without FX conversion."
+  tone="violet"
+  icon={<Icon name="chart" className="h-5 w-5" />}
+/>
+<StatCard
+  label="Estimated CHF spend"
+  value={formatMoney(Math.round(summary.currencyTotals.CHF), 'CHF')}
+  hint="Native currency totals without FX conversion."
+  tone="amber"
+  icon={<Icon name="chart" className="h-5 w-5" />}
+/>
+<StatCard label="Active freelancers" value={summary.activeFreelancers} hint="Unique freelancers contributing in the period." tone="sand" icon={<Icon name="users" className="h-5 w-5" />} />
         <StatCard label="Active projects" value={summary.activeProjects} hint="Projects carrying spend in the period." tone="amber" icon={<Icon name="folder" className="h-5 w-5" />} />
       </div>
 
@@ -77,6 +103,8 @@ function FinancialTable({ rows, emptyLabel }: { rows: FinancialRow[]; emptyLabel
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">EUR</th>
               <th className="px-4 py-3 font-medium">GBP</th>
+              <th className="px-4 py-3 font-medium">USD</th>
+              <th className="px-4 py-3 font-medium">CHF</th>
               <th className="px-4 py-3 font-medium">Active freelancers</th>
             </tr>
           </thead>
@@ -86,6 +114,9 @@ function FinancialTable({ rows, emptyLabel }: { rows: FinancialRow[]; emptyLabel
                 <td className="px-4 py-3 font-medium text-stone-900">{row.label}</td>
                 <td className="px-4 py-3 text-stone-700">{row.currencyTotals.EUR ? formatMoney(Math.round(row.currencyTotals.EUR), 'EUR') : '—'}</td>
                 <td className="px-4 py-3 text-stone-700">{row.currencyTotals.GBP ? formatMoney(Math.round(row.currencyTotals.GBP), 'GBP') : '—'}</td>
+                <td className="px-4 py-3 text-stone-700">{row.currencyTotals.USD ? formatMoney(Math.round(row.currencyTotals.USD), 'USD') : '—'}</td>
+                <td className="px-4 py-3 text-stone-700">{row.currencyTotals.CHF ? formatMoney(Math.round(row.currencyTotals.CHF), 'CHF') : '—'}</td>
+
                 <td className="px-4 py-3 text-stone-700">{row.activeFreelancers}</td>
               </tr>
             ))}
@@ -105,7 +136,7 @@ function buildFinancialSummary(allocations: any[], year: number, month: number |
     currencyTotals: filtered.reduce((acc, item) => {
       acc[item.dailyRateCurrency] += item.cost
       return acc
-    }, { EUR: 0, GBP: 0 } as Record<Currency, number>),
+    }, { EUR: 0, GBP: 0, USD: 0, CHF: 0 } as Record<Currency, number>),
     activeFreelancers: freelancerIds.size,
     activeProjects: projectIds.size,
   }
@@ -118,7 +149,7 @@ function buildProjectRows(allocations: any[], projects: any[], year: number, mon
   allocationsWithSpend(allocations, year, month).forEach((item) => {
     const project = projectMap.get(item.projectId)
     if (!project) return
-    if (!grouped.has(project.id)) grouped.set(project.id, { key: project.id, label: project.projectName, currencyTotals: { EUR: 0, GBP: 0 }, activeFreelancers: 0, nominalTotal: 0 })
+    if (!grouped.has(project.id)) grouped.set(project.id, { key: project.id, label: project.projectName, currencyTotals: { EUR: 0, GBP: 0, USD: 0, CHF: 0,}, activeFreelancers: 0, nominalTotal: 0 })
     if (!freelancerSets.has(project.id)) freelancerSets.set(project.id, new Set<string>())
     const row = grouped.get(project.id)!
     row.currencyTotals[item.dailyRateCurrency as Currency] += item.cost
@@ -137,7 +168,7 @@ function buildFreelancerRows(allocations: any[], freelancers: any[], year: numbe
   allocationsWithSpend(allocations, year, month).forEach((item) => {
     const freelancer = freelancerMap.get(item.freelancerId)
     if (!freelancer) return
-    if (!grouped.has(freelancer.id)) grouped.set(freelancer.id, { key: freelancer.id, label: freelancer.freelancerName, currencyTotals: { EUR: 0, GBP: 0 }, activeFreelancers: 1, nominalTotal: 0 })
+    if (!grouped.has(freelancer.id)) grouped.set(freelancer.id, { key: freelancer.id, label: freelancer.freelancerName, currencyTotals: { EUR: 0, GBP: 0, USD: 0, CHF: 0 }, activeFreelancers: 1, nominalTotal: 0 })
     const row = grouped.get(freelancer.id)!
     row.currencyTotals[item.dailyRateCurrency as Currency] += item.cost
     row.nominalTotal += item.cost

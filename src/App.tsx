@@ -8,11 +8,13 @@ import { DashboardPage } from './pages/DashboardPage'
 import { FeedbackManagerPage } from './pages/FeedbackManagerPage'
 import { FinancialsPage } from './pages/FinancialsPage'
 import { FreelancerDetailPage } from './pages/FreelancerDetailPage'
+import { FreelancerOnboardingPage } from './pages/FreelancerOnboardingPage'
 import { FreelancersPage } from './pages/FreelancersPage'
 import { ImportsPage } from './pages/ImportsPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectsPage } from './pages/ProjectsPage'
+import { RequestFreelancerPage } from './pages/RequestFreelancerPage'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/freelancers" element={<FreelancersPage />} />
+          <Route path="/freelancers/request" element={<RequestFreelancerPage />} />
+          <Route path="/freelancers/onboarding" element={<FreelancerOnboardingPage />} />
           <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />

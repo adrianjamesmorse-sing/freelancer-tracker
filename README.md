@@ -1,88 +1,77 @@
-# Freelancer Tracker
+# Vertex (Freelancer Tracker)
 
-Lightweight internal resource management MVP for tracking freelancers, projects, allocations, and operational notifications.
+Internal resource management for freelancers, projects, allocations, and notifications.
 
 ## Stack
 
-- React + TypeScript
-- Tailwind CSS
-- Vite
-- Netlify-ready frontend
-- Supabase-ready environment variables
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS
+- **Hosting:** Azure Static Web Apps
+- **API:** Azure Functions (linked `api/` app)
+- **Database:** PostgreSQL
+- **Auth:** Microsoft Entra ID (MSAL) + app roles
+- **Directory sync:** Microsoft Graph → `staff` table
 
-## MVP included
-
-- Dashboard
-- Freelancers list
-- Projects list
-- Freelancer detail
-- Project detail
-- Mock data for active, ending soon, and open follow-up cases
-
-## Local setup
+## Local development
 
 ```bash
 npm install
+cd api && npm install && cd ..
+
+# Frontend env (optional if API has Entra settings)
+cp .env.example .env
+
+# API secrets + database
+cp api/local.settings.example.json api/local.settings.json
+# Edit DATABASE_URL and ENTRA_* in api/local.settings.json
+
+# Terminal 1 – API
+cd api && func start
+
+# Terminal 2 – UI (proxies /api → localhost:7071)
 npm run dev
 ```
 
-## Build
+Skip Entra locally: set `VITE_AUTH_DISABLED=true` in `.env`.
 
-```bash
-npm run build
-```
+## Deploy (Azure Static Web Apps)
 
-## Environment
+Deployment is handled by `.github/workflows/azure-static-web-apps-*.yml` on push to `main`.
 
-Copy `.env.example` to `.env` for the frontend and configure `api/local.settings.json` for the API host:
+### Application settings (Azure Portal)
 
-```bash
-cp .env.example .env
-cp api/local.settings.example.json api/local.settings.json
-```
+Open your **Static Web App** → **Settings** → **Configuration** → **Application settings**:
 
-### Entra SSO and Graph
+| Setting | Used by |
+|---------|---------|
+| `DATABASE_URL` | API – PostgreSQL connection |
+| `ENTRA_TENANT_ID` | API + login config exposed to UI |
+| `ENTRA_CLIENT_ID` | API + login config exposed to UI |
+| `ENTRA_CLIENT_SECRET` | API – Graph staff sync |
+| `ENTRA_ALLOWED_DOMAIN` | API – default `singulier.co` |
 
-1. Register a single Entra application for Vertex.
-2. Add SPA redirect URI: `http://localhost:5173/login` (and your production URL).
-3. Create app roles: `Vertex.Viewer`, `Vertex.Editor`, `Vertex.Admin`.
-4. Assign roles to users or groups in Entra.
-5. Grant application permissions for Graph staff sync: `User.Read.All` (and optional `ProfilePhoto.Read.All`), then admin consent.
-6. Set frontend `VITE_ENTRA_*` variables and API `ENTRA_*` secrets.
+The SPA reads `ENTRA_TENANT_ID` and `ENTRA_CLIENT_ID` from `GET /api/auth/config` at startup, so you do **not** need separate `VITE_ENTRA_*` GitHub secrets unless you want build-time overrides.
 
-Routes:
-
-- `/login` — Microsoft Entra sign-in
-- Admin → Graph permissions — sync staff into Vertex for project assignment pickers
-- Page access is enforced from Entra app roles after sign-in
-
-For local UI work without Entra, set `VITE_AUTH_DISABLED=true`.
-
-Variables:
+Optional GitHub Actions secrets (build step only):
 
 - `VITE_ENTRA_TENANT_ID`
 - `VITE_ENTRA_CLIENT_ID`
-- `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET` (API)
+- `VITE_ENTRA_REDIRECT_URI` – e.g. `https://your-app.azurestaticapps.net/login`
 
-## Notes
+### Entra app registration
 
-This first pass is intentionally UI-first and uses mock data so the wireframe can be validated before wiring:
+1. **Authentication** → SPA redirect: `https://<your-host>/login` (and `http://localhost:5173/login` for dev).
+2. **App roles:** `Vertex.Viewer`, `Vertex.Editor`, `Vertex.Admin` – assign to users/groups.
+3. **API permissions:** `User.Read.All` (+ admin consent) for staff sync.
 
-- Entra sign-in via Supabase Auth
-- Microsoft Form ingestion
-- scheduled reminders / email sending
-- database-backed CRUD
+### Database
 
-## Serverless scaffolding
+Run migrations in `db/migrations/` against your Postgres instance. See `db/README.md`.
 
-Netlify function stubs included:
+## Project layout
 
-- `netlify/functions/health.ts`
-- `netlify/functions/process-form-submission.ts`
-- `netlify/functions/send-reminders.ts`
-
-## Database scaffold
-
-Starter schema included at:
-
-- `supabase/schema.sql`
+| Path | Purpose |
+|------|---------|
+| `src/` | React SPA |
+| `api/` | Azure Functions REST API |
+| `db/migrations/` | PostgreSQL schema |
+| `public/staticwebapp.config.json` | SWA SPA routing |

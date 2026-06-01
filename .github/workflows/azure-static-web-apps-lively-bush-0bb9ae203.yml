@@ -34,6 +34,11 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          VITE_ENTRA_TENANT_ID: ${{ secrets.VITE_ENTRA_TENANT_ID }}
+          VITE_ENTRA_CLIENT_ID: ${{ secrets.VITE_ENTRA_CLIENT_ID }}
+          VITE_ENTRA_ALLOWED_DOMAIN: ${{ secrets.VITE_ENTRA_ALLOWED_DOMAIN }}
+          VITE_ENTRA_REDIRECT_URI: ${{ secrets.VITE_ENTRA_REDIRECT_URI }}
 
       - name: Get Id Token
         uses: actions/github-script@v7

@@ -10,19 +10,19 @@ export function AdminCredentialsPage() {
 
   useEffect(() => { saveAdminConfig(config) }, [config])
 
-  const envSnippet = useMemo(() => `ENTRA_TENANT_ID=${config.tenantId || '{tenant-id}'}
+  const envSnippet = useMemo(() => `DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/vertex?sslmode=require
+ENTRA_TENANT_ID=${config.tenantId || '{tenant-id}'}
 ENTRA_CLIENT_ID=${config.clientId || '{client-id}'}
 ENTRA_CLIENT_SECRET=${config.clientSecret || '{client-secret}'}
-VERTEX_BASE_URL=${config.baseUrl || 'https://vertex.singulier.co'}
-BETTER_AUTH_URL=${config.baseUrl || 'https://vertex.singulier.co'}
-BETTER_AUTH_SECRET={generate-a-strong-secret}`, [config])
+ENTRA_ALLOWED_DOMAIN=${config.domain || 'singulier.co'}
+ENTRA_GRAPH_SCOPE=https://graph.microsoft.com/.default`, [config])
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Tenant ID" value={config.tenantId || 'Not set'} hint="Used for both SSO and Graph app auth." tone="brand" icon={<Icon name="shield" className="h-5 w-5" />} />
         <StatCard label="Client ID" value={config.clientId ? 'Configured' : 'Missing'} hint="App registration identifier for Vertex." tone="olive" icon={<Icon name="apps" className="h-5 w-5" />} />
-        <StatCard label="Client secret" value={config.clientSecret ? 'Stored locally' : 'Missing'} hint="Move this into environment variables when the backend is live." tone="sand" icon={<Icon name="mail" className="h-5 w-5" />} />
+        <StatCard label="Client secret" value={config.clientSecret ? 'Stored locally' : 'Missing'} hint="Set ENTRA_CLIENT_SECRET in Azure SWA application settings." tone="sand" icon={<Icon name="mail" className="h-5 w-5" />} />
         <StatCard label="Callback" value={callbackUrl(config).replace('https://', '')} hint="Use this in your Entra redirect URI list." tone="amber" icon={<Icon name="check" className="h-5 w-5" />} />
       </div>
 
@@ -47,9 +47,12 @@ BETTER_AUTH_SECRET={generate-a-strong-secret}`, [config])
           </div>
         </Panel>
 
-        <Panel title="Environment variable handoff" subtitle="Suggested variables to move into Netlify or your backend runtime once you hook the auth and sync flows up for real.">
+        <Panel title="Azure Static Web Apps settings" subtitle="Production secrets belong in SWA Configuration → Application settings. The API uses them at runtime; the login page reads tenant and client IDs from /api/auth/config.">
           <div className="rounded-2xl border border-stone-200 bg-[#f7f3eb] p-4 text-xs leading-6 text-stone-700"><pre className="overflow-auto"><code>{envSnippet}</code></pre></div>
-          <div className="mt-4 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-600">For MVP these values are stored in local browser state only. Before production, move the client secret into secure environment variables and keep Graph calls server-side.</div>
+          <div className="mt-4 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-600">
+            Never commit <code>ENTRA_CLIENT_SECRET</code> or <code>DATABASE_URL</code>. Browser fields
+            below are for local development only.
+          </div>
         </Panel>
       </div>
     </div>

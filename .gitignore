@@ -1,7 +1,6 @@
 node_modules
 dist
 .env
-.netlify
 # ignore ps1 files
 *.ps1
 api/local.settings.json

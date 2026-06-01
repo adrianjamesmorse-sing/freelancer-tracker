@@ -41,9 +41,9 @@ export function LoginPage() {
 
         {!configured ? (
           <div className="system-highlight mt-5">
-            Entra client settings are missing. Add <code>VITE_ENTRA_CLIENT_ID</code> and{' '}
-            <code>VITE_ENTRA_TENANT_ID</code> to your environment, or save credentials in Admin →
-            Credentials for local development.
+            Entra is not configured. In <strong>Azure Static Web Apps → Configuration</strong>, set{' '}
+            <code>ENTRA_TENANT_ID</code> and <code>ENTRA_CLIENT_ID</code>, then restart the app.
+            For local dev, use <code>.env</code> or Admin → Credentials.
           </div>
         ) : null}
 

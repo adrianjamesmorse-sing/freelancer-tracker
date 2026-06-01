@@ -25,10 +25,15 @@ app.http('auth-config-get', {
         scopes: ['openid', 'profile', 'email', 'User.Read'],
         redirectPath: '/login',
         roleMapping: {
+          'vertex.admin': 'admin',
+          'vertex.editor': 'editor',
+          'vertex.viewer': 'viewer',
           'Vertex.Admin': 'admin',
           'Vertex.Editor': 'editor',
           'Vertex.Viewer': 'viewer',
         },
+        roleHint:
+          'Create app roles on the Vertex enterprise application with Value set to vertex.admin, vertex.editor, or vertex.viewer, then assign users or groups to those roles.',
       }),
     )
   },

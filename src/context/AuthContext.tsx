@@ -23,6 +23,7 @@ type AuthContextValue = {
   user: AuthUser | null
   roles: VertexRole[]
   idToken: string | null
+  authError: string | null
   signIn: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -48,72 +49,90 @@ function useAuthContextValue(
   const [devMode, setDevMode] = useState(isAuthDisabled())
   const [user, setUser] = useState<AuthUser | null>(isAuthDisabled() ? devUser : null)
   const [idToken, setIdToken] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   const configured = isEntraConfigured()
 
-  const refreshProfile = useCallback(async () => {
-    if (isAuthDisabled()) {
-      setDevMode(true)
-      setUser(devUser)
-      setIdToken(null)
-      return
-    }
-
-    if (!msal) {
-      setUser(null)
-      setIdToken(null)
-      return
-    }
-
-    const { instance, accounts } = msal
-    const account = instance.getActiveAccount() ?? accounts[0]
-    if (!account) {
-      setUser(null)
-      setIdToken(null)
-      return
-    }
-
-    instance.setActiveAccount(account)
-
-    const tokenResult = await instance.acquireTokenSilent({
-      account,
-      scopes: getLoginScopes(),
-    })
-
-    const token = tokenResult.idToken
-    setIdToken(token)
-
-    try {
-      const profile = await fetchAuthMe(token)
-      if (profile.devMode) {
+  const refreshProfile = useCallback(
+    async (preferredToken?: string) => {
+      if (isAuthDisabled()) {
         setDevMode(true)
-        setUser(profile.user)
+        setUser(devUser)
+        setIdToken(null)
+        setAuthError(null)
         return
       }
 
-      setDevMode(false)
-      setUser(profile.user)
-    } catch {
-      setUser(null)
-      setIdToken(null)
-    }
-  }, [msal])
+      if (!msal) {
+        setUser(null)
+        setIdToken(null)
+        return
+      }
+
+      const { instance, accounts } = msal
+      const account = instance.getActiveAccount() ?? accounts[0]
+      if (!account) {
+        setUser(null)
+        setIdToken(null)
+        return
+      }
+
+      instance.setActiveAccount(account)
+      setAuthError(null)
+
+      try {
+        let token = preferredToken
+
+        if (!token) {
+          const tokenResult = await instance.acquireTokenSilent({
+            account,
+            scopes: getLoginScopes(),
+          })
+          token = tokenResult.idToken
+        }
+
+        if (!token) {
+          throw new Error('Microsoft sign-in did not return an ID token.')
+        }
+
+        setIdToken(token)
+
+        const profile = await fetchAuthMe(token)
+        if (profile.devMode) {
+          setDevMode(true)
+          setUser(profile.user)
+          return
+        }
+
+        setDevMode(false)
+        setUser(profile.user)
+      } catch (err) {
+        setUser(null)
+        setIdToken(null)
+        setAuthError(err instanceof Error ? err.message : 'Sign-in failed')
+      }
+    },
+    [msal],
+  )
 
   useEffect(() => {
     let cancelled = false
 
     const boot = async () => {
       try {
+        let redirectToken: string | undefined
+
         if (msal) {
           await getMsalInstance().initialize()
           const redirectResult = await msal.instance.handleRedirectPromise()
           if (redirectResult?.account) {
             msal.instance.setActiveAccount(redirectResult.account)
+            redirectToken = redirectResult.idToken
           }
         }
 
         if (!cancelled) {
-          await refreshProfile()
+          await refreshProfile(redirectToken)
         }
       } finally {
         if (!cancelled) {
@@ -129,8 +148,16 @@ function useAuthContextValue(
     }
   }, [msal, refreshProfile])
 
+  useEffect(() => {
+    if (!msal || !ready) return
+    if (msal.accounts.length > 0 && !user && !authError) {
+      void refreshProfile()
+    }
+  }, [msal, ready, user, authError, refreshProfile])
+
   const signIn = useCallback(async () => {
     if (!msal) return
+    setAuthError(null)
     await msal.instance.loginRedirect({
       scopes: getLoginScopes(),
       prompt: 'select_account',
@@ -140,6 +167,7 @@ function useAuthContextValue(
   const signOut = useCallback(async () => {
     setUser(null)
     setIdToken(null)
+    setAuthError(null)
     if (!msal) return
     await msal.instance.logoutRedirect({
       postLogoutRedirectUri: `${window.location.origin}/login`,
@@ -158,13 +186,26 @@ function useAuthContextValue(
       user,
       roles,
       idToken,
+      authError,
       signIn,
       signOut,
-      refreshProfile,
+      refreshProfile: () => refreshProfile(),
       canAccessPath: (pathname) => canAccessPath(roles, pathname),
       canAccessSection: (section) => canAccessSection(roles, section),
     }),
-    [ready, devMode, configured, isAuthenticated, user, roles, idToken, signIn, signOut, refreshProfile],
+    [
+      ready,
+      devMode,
+      configured,
+      isAuthenticated,
+      user,
+      roles,
+      idToken,
+      authError,
+      signIn,
+      signOut,
+      refreshProfile,
+    ],
   )
 }
 

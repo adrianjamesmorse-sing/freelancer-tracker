@@ -60,7 +60,7 @@ Optional GitHub Actions secrets (build step only):
 ### Entra app registration
 
 1. **Authentication** → SPA redirect: `https://<your-host>/login` (and `http://localhost:5173/login` for dev).
-2. **App roles:** `Vertex.Viewer`, `Vertex.Editor`, `Vertex.Admin` – assign to users/groups.
+2. **App roles** on the Vertex enterprise app with **Value**: `vertex.viewer`, `vertex.editor`, `vertex.admin` – assign users or groups to those roles (not only separate security group names).
 3. **API permissions:** `User.Read.All` (+ admin consent) for staff sync.
 
 ### Database

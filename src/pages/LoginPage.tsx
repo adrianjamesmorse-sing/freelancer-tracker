@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
@@ -6,17 +5,8 @@ import { isAuthDisabled } from '../lib/entraSettings'
 
 export function LoginPage() {
   const location = useLocation()
-  const { ready, isAuthenticated, configured, signIn } = useAuth()
+  const { ready, isAuthenticated, configured, authError, signIn } = useAuth()
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
-
-  useEffect(() => {
-    if (ready && configured && !isAuthenticated && !isAuthDisabled()) {
-      const params = new URLSearchParams(location.search)
-      if (!params.get('code') && !params.get('error')) {
-        return
-      }
-    }
-  }, [configured, isAuthenticated, location.search, ready])
 
   if (isAuthDisabled()) {
     return <Navigate to={returnTo} replace />
@@ -35,8 +25,8 @@ export function LoginPage() {
 
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-stone-900">Sign in to Vertex</h1>
         <p className="mt-2 text-sm leading-6 text-stone-600">
-          Use your Singulier Microsoft Entra account. Access to pages is controlled through Entra app
-          roles assigned to your profile.
+          Use your Singulier Microsoft Entra account. Access is granted through application roles on
+          the Vertex enterprise app.
         </p>
 
         {!configured ? (
@@ -47,19 +37,31 @@ export function LoginPage() {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          className="btn-primary mt-6 w-full justify-center"
-          disabled={!ready || !configured}
-          onClick={() => void signIn()}
-        >
-          <Icon name="shield" className="h-4 w-4" />
-          Continue with Microsoft
-        </button>
+        {authError ? (
+          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            <div className="font-medium">Sign-in could not be completed</div>
+            <div className="mt-1 leading-6">{authError}</div>
+          </div>
+        ) : null}
+
+        {!ready ? (
+          <div className="mt-6 text-sm text-stone-600">Completing Microsoft sign-in…</div>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary mt-6 w-full justify-center"
+            disabled={!configured}
+            onClick={() => void signIn()}
+          >
+            <Icon name="shield" className="h-4 w-4" />
+            Continue with Microsoft
+          </button>
+        )}
 
         <p className="mt-5 text-xs leading-5 text-stone-500">
-          Required Entra app roles: <strong>Vertex.Viewer</strong>, <strong>Vertex.Editor</strong>, or{' '}
-          <strong>Vertex.Admin</strong>. Users without a role cannot access Vertex after sign-in.
+          App role <strong>Value</strong> must be one of: <code>vertex.viewer</code>,{' '}
+          <code>vertex.editor</code>, or <code>vertex.admin</code>. Assign your user (or group) to
+          that role under the Vertex <strong>Enterprise application</strong> → Users and groups.
         </p>
       </div>
     </div>

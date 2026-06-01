@@ -91,8 +91,9 @@ await authClient.signIn.sso({
           />
         </div>
         <p className="mt-4 text-sm leading-6 text-stone-600">
-          Assign Entra app roles <strong>Vertex.Viewer</strong>, <strong>Vertex.Editor</strong>, and{' '}
-          <strong>Vertex.Admin</strong> to control which pages each profile can open after sign-in.
+          Assign Entra app roles with values <code>vertex.viewer</code>, <code>vertex.editor</code>,
+          and <code>vertex.admin</code> on the Vertex enterprise app, then assign users or groups to
+          those roles.
         </p>
       </Panel>
 

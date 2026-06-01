@@ -1,12 +1,16 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
+import { mapRoleStrings } from '../lib/entraRoles'
+import { getEntraClientSettings } from '../lib/entraSettings'
 import { isAuthDisabled } from '../lib/entraSettings'
 
 export function LoginPage() {
   const location = useLocation()
-  const { ready, isAuthenticated, configured, authError, signIn } = useAuth()
+  const { ready, isAuthenticated, configured, authError, tokenRoles, signIn } = useAuth()
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
+  const mappedRoles = mapRoleStrings(tokenRoles)
+  const redirectUri = getEntraClientSettings().redirectUri
 
   if (isAuthDisabled()) {
     return <Navigate to={returnTo} replace />
@@ -25,15 +29,13 @@ export function LoginPage() {
 
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-stone-900">Sign in to Vertex</h1>
         <p className="mt-2 text-sm leading-6 text-stone-600">
-          Use your Singulier Microsoft Entra account. Access is granted through application roles on
-          the Vertex enterprise app.
+          Use your Singulier Microsoft Entra account.
         </p>
 
         {!configured ? (
           <div className="system-highlight mt-5">
             Entra is not configured. In <strong>Azure Static Web Apps → Configuration</strong>, set{' '}
-            <code>ENTRA_TENANT_ID</code> and <code>ENTRA_CLIENT_ID</code>, then restart the app.
-            For local dev, use <code>.env</code> or Admin → Credentials.
+            <code>ENTRA_TENANT_ID</code> and <code>ENTRA_CLIENT_ID</code>, then redeploy.
           </div>
         ) : null}
 
@@ -41,6 +43,27 @@ export function LoginPage() {
           <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
             <div className="font-medium">Sign-in could not be completed</div>
             <div className="mt-1 leading-6">{authError}</div>
+          </div>
+        ) : null}
+
+        {ready && tokenRoles.length > 0 ? (
+          <div className="mt-5 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-700">
+            <div className="font-medium text-stone-900">Roles on your Microsoft token</div>
+            <div className="mt-1">{tokenRoles.join(', ')}</div>
+            {mappedRoles.length ? (
+              <div className="mt-2 text-stone-600">Vertex recognises this as: {mappedRoles.join(', ')}</div>
+            ) : (
+              <div className="mt-2 text-amber-800">
+                These values are not recognised. App role <strong>Value</strong> must be exactly{' '}
+                <code>vertex.admin</code>, <code>vertex.editor</code>, or <code>vertex.viewer</code>.
+              </div>
+            )}
+          </div>
+        ) : ready && configured && !authError ? (
+          <div className="mt-5 rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            No <code>roles</code> claim was found on your Microsoft token yet. In Entra → App
+            registration → <strong>Token configuration</strong>, add optional claim <strong>roles</strong>{' '}
+            to the ID token, then sign out and sign in again.
           </div>
         ) : null}
 
@@ -59,9 +82,9 @@ export function LoginPage() {
         )}
 
         <p className="mt-5 text-xs leading-5 text-stone-500">
-          App role <strong>Value</strong> must be one of: <code>vertex.viewer</code>,{' '}
-          <code>vertex.editor</code>, or <code>vertex.admin</code>. Assign your user (or group) to
-          that role under the Vertex <strong>Enterprise application</strong> → Users and groups.
+          Redirect URI: <code>{redirectUri}</code>. Assign app roles on the Vertex{' '}
+          <strong>enterprise application</strong> (Users and groups), not only a security group in
+          Entra ID.
         </p>
       </div>
     </div>

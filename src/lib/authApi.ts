@@ -56,9 +56,12 @@ export function fetchAuthConfig() {
   return apiFetch<AuthConfig>('/auth/config')
 }
 
-export function fetchAuthMe(idToken: string) {
+export function fetchAuthMe(idToken: string, accessToken?: string) {
   return apiFetch<{ authenticated: boolean; devMode?: boolean; user: AuthUser }>('/auth/me', {
-    headers: { authorization: `Bearer ${idToken}` },
+    headers: {
+      authorization: `Bearer ${idToken}`,
+      ...(accessToken ? { 'x-vertex-access-token': accessToken } : {}),
+    },
   })
 }
 

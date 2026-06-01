@@ -3,13 +3,15 @@ import {
   PublicClientApplication,
   type AuthenticationResult,
   type Configuration,
+  type IPublicClientApplication,
 } from '@azure/msal-browser'
 import { getEntraClientSettings } from './entraSettings'
 
 let msalInstance: PublicClientApplication | undefined
+let redirectPromise: Promise<AuthenticationResult | null> | null = null
 
 export function getLoginScopes() {
-  return ['openid', 'profile', 'email', 'User.Read']
+  return ['openid', 'profile', 'email']
 }
 
 export function createMsalInstance() {
@@ -20,9 +22,12 @@ export function createMsalInstance() {
       clientId: settings.clientId,
       authority: `https://login.microsoftonline.com/${settings.tenantId || 'organizations'}`,
       redirectUri: settings.redirectUri,
+      knownAuthorities: settings.tenantId
+        ? [`login.microsoftonline.com`]
+        : undefined,
     },
     cache: {
-      cacheLocation: 'localStorage',
+      cacheLocation: 'sessionStorage',
     },
   }
 
@@ -43,4 +48,16 @@ export function getMsalInstance() {
     msalInstance = createMsalInstance()
   }
   return msalInstance
+}
+
+/** MSAL redirect handling must only run once per page load (avoids losing the auth code). */
+export function handleRedirectOnce(instance: IPublicClientApplication) {
+  if (!redirectPromise) {
+    redirectPromise = instance.handleRedirectPromise()
+  }
+  return redirectPromise
+}
+
+export function clearRedirectPromise() {
+  redirectPromise = null
 }

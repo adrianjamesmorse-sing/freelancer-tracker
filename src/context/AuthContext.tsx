@@ -12,8 +12,13 @@ import type { VertexRole } from '../lib/accessControl'
 import { canAccessPath, canAccessSection } from '../lib/accessControl'
 import { fetchAuthMe } from '../lib/authApi'
 import type { AuthUser } from '../lib/authApi'
-import { getLoginScopes, getMsalInstance } from '../lib/msal'
-import { isAuthDisabled, isEntraConfigured } from '../lib/entraSettings'
+import { extractRoleStrings, mapRoleStrings } from '../lib/entraRoles'
+import {
+  getEntraClientSettings,
+  isAuthDisabled,
+  isEntraConfigured,
+} from '../lib/entraSettings'
+import { getLoginScopes, getMsalInstance, handleRedirectOnce } from '../lib/msal'
 
 type AuthContextValue = {
   ready: boolean
@@ -24,6 +29,7 @@ type AuthContextValue = {
   roles: VertexRole[]
   idToken: string | null
   authError: string | null
+  tokenRoles: string[]
   signIn: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -39,6 +45,11 @@ const devUser: AuthUser = {
   roles: ['admin'],
 }
 
+function hasAuthResponseInUrl() {
+  const params = new URLSearchParams(window.location.search)
+  return params.has('code') || params.has('error') || window.location.hash.includes('code=')
+}
+
 function useAuthContextValue(
   msal?: {
     instance: ReturnType<typeof useMsal>['instance']
@@ -50,16 +61,18 @@ function useAuthContextValue(
   const [user, setUser] = useState<AuthUser | null>(isAuthDisabled() ? devUser : null)
   const [idToken, setIdToken] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [tokenRoles, setTokenRoles] = useState<string[]>([])
 
   const configured = isEntraConfigured()
 
   const refreshProfile = useCallback(
-    async (preferredToken?: string) => {
+    async (preferredToken?: string, preferredAccessToken?: string) => {
       if (isAuthDisabled()) {
         setDevMode(true)
         setUser(devUser)
         setIdToken(null)
         setAuthError(null)
+        setTokenRoles([])
         return
       }
 
@@ -74,21 +87,33 @@ function useAuthContextValue(
       if (!account) {
         setUser(null)
         setIdToken(null)
+        setTokenRoles([])
+        if (hasAuthResponseInUrl()) {
+          setAuthError(
+            'Microsoft redirected back to Vertex, but no sign-in session was stored. Confirm the Entra redirect URI exactly matches ' +
+              getEntraClientSettings().redirectUri,
+          )
+        }
         return
       }
 
       instance.setActiveAccount(account)
       setAuthError(null)
 
+      const claimRoles = extractRoleStrings(account.idTokenClaims ?? undefined)
+      setTokenRoles(claimRoles)
+
       try {
         let token = preferredToken
+        let accessToken = preferredAccessToken
 
-        if (!token) {
+        if (!token || !accessToken) {
           const tokenResult = await instance.acquireTokenSilent({
             account,
             scopes: getLoginScopes(),
           })
-          token = tokenResult.idToken
+          token = token ?? tokenResult.idToken
+          accessToken = accessToken ?? tokenResult.accessToken
         }
 
         if (!token) {
@@ -97,7 +122,7 @@ function useAuthContextValue(
 
         setIdToken(token)
 
-        const profile = await fetchAuthMe(token)
+        const profile = await fetchAuthMe(token, accessToken)
         if (profile.devMode) {
           setDevMode(true)
           setUser(profile.user)
@@ -106,10 +131,24 @@ function useAuthContextValue(
 
         setDevMode(false)
         setUser(profile.user)
+
+        if (hasAuthResponseInUrl()) {
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
       } catch (err) {
         setUser(null)
         setIdToken(null)
-        setAuthError(err instanceof Error ? err.message : 'Sign-in failed')
+
+        const mapped = mapRoleStrings(claimRoles)
+        const baseMessage = err instanceof Error ? err.message : 'Sign-in failed'
+
+        if (mapped.length && baseMessage.includes('not authorized')) {
+          setAuthError(
+            `${baseMessage} Your token includes: ${claimRoles.join(', ')}. Vertex mapped that to: ${mapped.join(', ')}. If this persists, redeploy the latest API build.`,
+          )
+        } else {
+          setAuthError(baseMessage)
+        }
       }
     },
     [msal],
@@ -121,18 +160,20 @@ function useAuthContextValue(
     const boot = async () => {
       try {
         let redirectToken: string | undefined
+        let redirectAccessToken: string | undefined
 
         if (msal) {
           await getMsalInstance().initialize()
-          const redirectResult = await msal.instance.handleRedirectPromise()
+          const redirectResult = await handleRedirectOnce(msal.instance)
           if (redirectResult?.account) {
             msal.instance.setActiveAccount(redirectResult.account)
             redirectToken = redirectResult.idToken
+            redirectAccessToken = redirectResult.accessToken
           }
         }
 
         if (!cancelled) {
-          await refreshProfile(redirectToken)
+          await refreshProfile(redirectToken, redirectAccessToken)
         }
       } finally {
         if (!cancelled) {
@@ -161,6 +202,7 @@ function useAuthContextValue(
     await msal.instance.loginRedirect({
       scopes: getLoginScopes(),
       prompt: 'select_account',
+      redirectUri: getEntraClientSettings().redirectUri,
     })
   }, [msal])
 
@@ -168,6 +210,7 @@ function useAuthContextValue(
     setUser(null)
     setIdToken(null)
     setAuthError(null)
+    setTokenRoles([])
     if (!msal) return
     await msal.instance.logoutRedirect({
       postLogoutRedirectUri: `${window.location.origin}/login`,
@@ -187,6 +230,7 @@ function useAuthContextValue(
       roles,
       idToken,
       authError,
+      tokenRoles,
       signIn,
       signOut,
       refreshProfile: () => refreshProfile(),
@@ -202,6 +246,7 @@ function useAuthContextValue(
       roles,
       idToken,
       authError,
+      tokenRoles,
       signIn,
       signOut,
       refreshProfile,

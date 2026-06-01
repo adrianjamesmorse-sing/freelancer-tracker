@@ -7,7 +7,12 @@ import { syncStaffFromEntra } from '../lib/authApi'
 import { loadAdminConfig, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
 
 
-const allPermissions = ['User.Read.All', 'Directory.Read.All', 'ProfilePhoto.Read.All']
+const allPermissions = [
+  'User.Read.All',
+  'AppRoleAssignment.Read.All',
+  'Directory.Read.All',
+  'ProfilePhoto.Read.All',
+]
 
 export function AdminGraphPage() {
   const { idToken } = useAuth()
@@ -139,6 +144,9 @@ GET https://graph.microsoft.com/v1.0/users/{id}/photos/120x120/$value`, [config]
 
 function describePermission(permission: string) {
   if (permission === 'User.Read.All') return 'Read user profiles for the local Vertex staff directory.'
+  if (permission === 'AppRoleAssignment.Read.All') {
+    return 'Read which app roles (vertex.admin, etc.) are assigned to each user when the ID token has no roles claim.'
+  }
   if (permission === 'Directory.Read.All') return 'Read broader tenant directory metadata when user-only access is insufficient.'
   if (permission === 'ProfilePhoto.Read.All') return 'Read staff profile photos for review cards and people pickers.'
   return ''

@@ -61,9 +61,10 @@ export function LoginPage() {
           </div>
         ) : ready && configured && !authError ? (
           <div className="mt-5 rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
-            No <code>roles</code> claim was found on your Microsoft token yet. In Entra → App
-            registration → <strong>Token configuration</strong>, add optional claim <strong>roles</strong>{' '}
-            to the ID token, then sign out and sign in again.
+            No <code>roles</code> claim on your token yet — that is normal. After you deploy the latest
+            API, Vertex will read your <code>vertex.admin</code> assignment from Microsoft Graph
+            instead. Ensure <code>ENTRA_CLIENT_SECRET</code> is set and Graph permission{' '}
+            <code>AppRoleAssignment.Read.All</code> is granted with admin consent.
           </div>
         ) : null}
 

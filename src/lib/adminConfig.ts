@@ -22,7 +22,7 @@ export const defaultAdminConfig: VertexAdminConfig = {
   issuer: 'https://login.microsoftonline.com/organizations/v2.0',
   clientId: '',
   clientSecret: '',
-  graphAppPermissions: ['User.Read.All', 'ProfilePhoto.Read.All'],
+  graphAppPermissions: ['User.Read.All', 'AppRoleAssignment.Read.All', 'ProfilePhoto.Read.All'],
   graphScopes: 'https://graph.microsoft.com/.default',
   callbackPath: '/login',
   graphNotes: '',

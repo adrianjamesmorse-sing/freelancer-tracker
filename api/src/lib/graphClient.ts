@@ -79,6 +79,69 @@ export async function fetchAllStaffUsers(accessToken: string) {
   return users
 }
 
+type GraphAppRole = {
+  id: string
+  value: string
+}
+
+type GraphServicePrincipal = {
+  id: string
+  appRoles?: GraphAppRole[]
+}
+
+type GraphAppRoleAssignment = {
+  appRoleId: string
+  principalId: string
+}
+
+/** Read app roles assigned to a user on this application (works without roles optional claim on ID token). */
+export async function fetchUserAppRoleValues(entraUserId: string): Promise<string[]> {
+  const clientId = process.env.ENTRA_CLIENT_ID?.trim()
+  if (!clientId || !entraUserId) {
+    return []
+  }
+
+  let accessToken: string
+  try {
+    accessToken = await getGraphAccessToken()
+  } catch {
+    return []
+  }
+
+  const spResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId eq '${clientId}'&$select=id,appRoles`,
+    { headers: { authorization: `Bearer ${accessToken}` } },
+  )
+
+  if (!spResponse.ok) {
+    return []
+  }
+
+  const spPayload = (await spResponse.json()) as { value?: GraphServicePrincipal[] }
+  const servicePrincipal = spPayload.value?.[0]
+  if (!servicePrincipal?.id) {
+    return []
+  }
+
+  const assignResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/servicePrincipals/${servicePrincipal.id}/appRoleAssignedTo?$filter=principalId eq '${entraUserId}'&$select=appRoleId`,
+    { headers: { authorization: `Bearer ${accessToken}` } },
+  )
+
+  if (!assignResponse.ok) {
+    return []
+  }
+
+  const assignPayload = (await assignResponse.json()) as { value?: GraphAppRoleAssignment[] }
+  const roleById = new Map(
+    (servicePrincipal.appRoles ?? []).map((role) => [role.id, role.value]),
+  )
+
+  return (assignPayload.value ?? [])
+    .map((assignment) => roleById.get(assignment.appRoleId))
+    .filter((value): value is string => Boolean(value))
+}
+
 export function toStaffRecord(user: GraphUser) {
   const email = String(user.mail ?? user.userPrincipalName ?? '').toLowerCase()
   const fullName =

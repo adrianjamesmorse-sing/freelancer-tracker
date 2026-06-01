@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
 import type { HttpRequest } from '@azure/functions'
+import { fetchUserAppRoleValues } from './graphClient.js'
 
 export type VertexRole = 'viewer' | 'editor' | 'admin'
 
@@ -57,9 +58,7 @@ function extractRawRoles(payload: JWTPayload): string[] {
   return []
 }
 
-export function mapRolesFromToken(payload: JWTPayload): VertexRole[] {
-  const rawRoles = extractRawRoles(payload)
-
+function mapRawRoleStrings(rawRoles: string[], email: string): VertexRole[] {
   const mapped = rawRoles
     .map((role) => ROLE_ALIASES[normalizeRoleKey(role)])
     .filter((role): role is VertexRole => Boolean(role))
@@ -68,14 +67,17 @@ export function mapRolesFromToken(payload: JWTPayload): VertexRole[] {
     return [...new Set(mapped)]
   }
 
-  const email = String(payload.preferred_username ?? payload.email ?? payload.upn ?? '').toLowerCase()
   const allowedDomain = (process.env.ENTRA_ALLOWED_DOMAIN || 'singulier.co').toLowerCase()
-
   if (email.endsWith(`@${allowedDomain}`)) {
     return ['viewer']
   }
 
   return []
+}
+
+export function mapRolesFromToken(payload: JWTPayload): VertexRole[] {
+  const email = String(payload.preferred_username ?? payload.email ?? payload.upn ?? '').toLowerCase()
+  return mapRawRoleStrings(extractRawRoles(payload), email)
 }
 
 export function isAuthConfigured() {
@@ -136,23 +138,27 @@ export async function verifyBearerToken(
   }
 
   let rawRoles = extractRawRoles(payload)
-  let roles = mapRolesFromToken(payload)
 
-  if (!roles.length && options?.accessToken) {
+  if (!rawRoles.length && options?.accessToken) {
     const accessPayload = decodeJwtPayload(options.accessToken)
     if (accessPayload) {
-      const accessRoles = extractRawRoles(accessPayload)
-      if (accessRoles.length) {
-        rawRoles = accessRoles
-        roles = mapRolesFromToken(accessPayload)
-      }
+      rawRoles = extractRawRoles(accessPayload)
     }
   }
 
+  if (!rawRoles.length) {
+    const entraUserId = String(payload.oid ?? payload.sub ?? '')
+    if (entraUserId) {
+      rawRoles = await fetchUserAppRoleValues(entraUserId)
+    }
+  }
+
+  const roles = mapRawRoleStrings(rawRoles, email)
+
   if (!roles.length) {
     const roleHint = rawRoles.length
-      ? `Roles on your token: ${rawRoles.join(', ')}. Expected values: vertex.admin, vertex.editor, or vertex.viewer.`
-      : 'No roles claim was found on your Microsoft token. In Entra, add the roles optional claim to the ID token and assign an application role on the Vertex enterprise app.'
+      ? `Roles assigned in Entra: ${rawRoles.join(', ')}. Expected app role values: vertex.admin, vertex.editor, or vertex.viewer.`
+      : 'No application roles were found for your account. Assign vertex.admin (or viewer/editor) on the Vertex enterprise app → Users and groups. Grant the API AppRoleAssignment.Read.All (or Directory.Read.All) permission if roles are assigned but not detected.'
     throw new Error(`Your Entra account is not authorized for Vertex. ${roleHint}`)
   }
 

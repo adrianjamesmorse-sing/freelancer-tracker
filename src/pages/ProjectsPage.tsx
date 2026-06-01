@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Modal } from '../components/Modal'
 import { Panel } from '../components/Panel'
+import { StaffPicker } from '../components/StaffPicker'
 import { useTrackerData } from '../hooks/useTrackerData'
 import { formatDate } from '../lib/format'
 import type { Entity, NewProjectInput } from '../types'
@@ -248,26 +249,19 @@ export function ProjectsPage() {
             </select>
           </label>
 
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Project manager name</span>
-            <input
-              required
-              value={form.projectManagerName}
-              onChange={(event) => setForm((current) => ({ ...current, projectManagerName: event.target.value }))}
-              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Project manager email</span>
-            <input
-              required
-              type="email"
-              value={form.projectManagerEmail}
-              onChange={(event) => setForm((current) => ({ ...current, projectManagerEmail: event.target.value }))}
-              className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-stone-500"
-            />
-          </label>
+          <StaffPicker
+            label="Project manager (from Entra staff directory)"
+            valueName={form.projectManagerName}
+            valueEmail={form.projectManagerEmail}
+            required
+            onChange={({ name, email }) =>
+              setForm((current) => ({
+                ...current,
+                projectManagerName: name,
+                projectManagerEmail: email,
+              }))
+            }
+          />
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <button

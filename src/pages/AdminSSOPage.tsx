@@ -2,11 +2,22 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Panel } from '../components/Panel'
 import { StatCard } from '../components/StatCard'
+import { useAuth } from '../context/AuthContext'
+import { fetchAuthConfig } from '../lib/authApi'
 import { callbackUrl, loadAdminConfig, oidcDiscoveryUrl, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
+import { isEntraConfigured } from '../lib/entraSettings'
 
 export function AdminSSOPage() {
+  const { user, configured: clientConfigured } = useAuth()
   const [config, setConfig] = useState<VertexAdminConfig>(() => loadAdminConfig())
   const [savedState, setSavedState] = useState('')
+  const [apiConfigured, setApiConfigured] = useState(false)
+
+  useEffect(() => {
+    void fetchAuthConfig()
+      .then((payload) => setApiConfigured(payload.configured))
+      .catch(() => setApiConfigured(false))
+  }, [])
 
   useEffect(() => {
     saveAdminConfig(config)
@@ -58,8 +69,35 @@ await authClient.signIn.sso({
         <StatCard label="Discovery URL" value={(config.tenantId || 'organizations')} hint="OIDC metadata source for Entra." tone="amber" icon={<Icon name="globe" className="h-5 w-5" />} />
       </div>
 
+      <Panel
+        title="Vertex ↔ Entra connection"
+        subtitle="Login, staff sync, and page access are wired through Microsoft Entra ID and Microsoft Graph."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatusPill
+            label="Client sign-in"
+            ok={clientConfigured || isEntraConfigured()}
+            detail={clientConfigured ? 'MSAL configured' : 'Set client and tenant IDs'}
+          />
+          <StatusPill
+            label="API auth"
+            ok={apiConfigured}
+            detail={apiConfigured ? 'API validates Entra tokens' : 'Set ENTRA_* on the API host'}
+          />
+          <StatusPill
+            label="Signed-in user"
+            ok={Boolean(user)}
+            detail={user ? `${user.fullName} · ${user.roles.join(', ')}` : 'Sign in at /login'}
+          />
+        </div>
+        <p className="mt-4 text-sm leading-6 text-stone-600">
+          Assign Entra app roles <strong>Vertex.Viewer</strong>, <strong>Vertex.Editor</strong>, and{' '}
+          <strong>Vertex.Admin</strong> to control which pages each profile can open after sign-in.
+        </p>
+      </Panel>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
-        <Panel title="SSO configuration" subtitle="Configure Better Auth SSO for Microsoft Entra. These values are stored locally for now and can later be moved into secure environment variables.">
+        <Panel title="SSO configuration" subtitle="OIDC settings for Microsoft Entra. Production values should live in environment variables on the API and Vite hosts.">
           <form className="grid gap-4 md:grid-cols-2">
             <Field label="Base URL" value={config.baseUrl} onChange={(value) => setConfig((current) => ({ ...current, baseUrl: value }))} />
             <Field label="Provider ID" value={config.providerId} onChange={(value) => setConfig((current) => ({ ...current, providerId: value }))} />
@@ -104,6 +142,18 @@ function Field({ label, value, onChange, placeholder, className = '' }: { label:
       <span className="mb-2 block font-medium">{label}</span>
       <input className="w-full rounded-2xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm" value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
     </label>
+  )
+}
+
+function StatusPill({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white/80 px-4 py-3">
+      <div className="text-xs font-medium uppercase tracking-wide text-stone-500">{label}</div>
+      <div className={`mt-1 text-sm font-semibold ${ok ? 'text-emerald-800' : 'text-amber-800'}`}>
+        {ok ? 'Connected' : 'Needs setup'}
+      </div>
+      <div className="mt-1 text-xs text-stone-600">{detail}</div>
+    </div>
   )
 }
 

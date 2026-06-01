@@ -24,7 +24,7 @@ export const defaultAdminConfig: VertexAdminConfig = {
   clientSecret: '',
   graphAppPermissions: ['User.Read.All', 'ProfilePhoto.Read.All'],
   graphScopes: 'https://graph.microsoft.com/.default',
-  callbackPath: '/api/auth/sso/callback/entra-singulier',
+  callbackPath: '/login',
   graphNotes: '',
 }
 

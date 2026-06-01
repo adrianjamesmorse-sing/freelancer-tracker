@@ -34,16 +34,35 @@ npm run build
 
 ## Environment
 
-Copy `.env.example` to `.env` when wiring Supabase:
+Copy `.env.example` to `.env` for the frontend and configure `api/local.settings.json` for the API host:
 
 ```bash
 cp .env.example .env
+cp api/local.settings.example.json api/local.settings.json
 ```
+
+### Entra SSO and Graph
+
+1. Register a single Entra application for Vertex.
+2. Add SPA redirect URI: `http://localhost:5173/login` (and your production URL).
+3. Create app roles: `Vertex.Viewer`, `Vertex.Editor`, `Vertex.Admin`.
+4. Assign roles to users or groups in Entra.
+5. Grant application permissions for Graph staff sync: `User.Read.All` (and optional `ProfilePhoto.Read.All`), then admin consent.
+6. Set frontend `VITE_ENTRA_*` variables and API `ENTRA_*` secrets.
+
+Routes:
+
+- `/login` — Microsoft Entra sign-in
+- Admin → Graph permissions — sync staff into Vertex for project assignment pickers
+- Page access is enforced from Entra app roles after sign-in
+
+For local UI work without Entra, set `VITE_AUTH_DISABLED=true`.
 
 Variables:
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ENTRA_TENANT_ID`
+- `VITE_ENTRA_CLIENT_ID`
+- `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET` (API)
 
 ## Notes
 

@@ -3,6 +3,11 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
-    "DATABASE_URL": "postgres://USER:PASSWORD@HOST:5432/vertex?sslmode=require"
+    "DATABASE_URL": "postgres://USER:PASSWORD@HOST:5432/vertex?sslmode=require",
+    "ENTRA_TENANT_ID": "your-tenant-id",
+    "ENTRA_CLIENT_ID": "your-client-id",
+    "ENTRA_CLIENT_SECRET": "your-client-secret",
+    "ENTRA_ALLOWED_DOMAIN": "singulier.co",
+    "ENTRA_GRAPH_SCOPE": "https://graph.microsoft.com/.default"
   }
 }

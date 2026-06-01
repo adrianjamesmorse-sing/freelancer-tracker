@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { Panel } from '../components/Panel'
 import { StatCard } from '../components/StatCard'
+import { useAuth } from '../context/AuthContext'
+import { syncStaffFromEntra } from '../lib/authApi'
 import { loadAdminConfig, saveAdminConfig, type VertexAdminConfig } from '../lib/adminConfig'
 
 
 const allPermissions = ['User.Read.All', 'Directory.Read.All', 'ProfilePhoto.Read.All']
 
 export function AdminGraphPage() {
+  const { idToken } = useAuth()
   const [config, setConfig] = useState<VertexAdminConfig>(() => loadAdminConfig())
+  const [syncMessage, setSyncMessage] = useState('')
+  const [isSyncing, setIsSyncing] = useState(false)
   useEffect(() => { saveAdminConfig(config) }, [config])
 
   const consentUrl = useMemo(() => {
@@ -91,6 +96,40 @@ GET https://graph.microsoft.com/v1.0/users/{id}/photos/120x120/$value`, [config]
             ) : (
               <div className="rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-600">Set the tenant ID and client ID on the Credentials page to generate an admin-consent link.</div>
             )}
+
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!idToken || isSyncing}
+                onClick={async () => {
+                  if (!idToken) return
+                  setIsSyncing(true)
+                  setSyncMessage('')
+                  try {
+                    const result = await syncStaffFromEntra(idToken)
+                    setSyncMessage(
+                      `Synced ${result.synced} staff members from Entra (${result.skipped} skipped).`,
+                    )
+                  } catch (err) {
+                    setSyncMessage(err instanceof Error ? err.message : 'Staff sync failed')
+                  } finally {
+                    setIsSyncing(false)
+                  }
+                }}
+              >
+                {isSyncing ? 'Syncing staff…' : 'Sync staff from Entra'}
+              </button>
+              <p className="text-sm text-stone-600">
+                Pulls Entra users into the Vertex <code>staff</code> table for project assignment pickers.
+              </p>
+            </div>
+
+            {syncMessage ? (
+              <div className="rounded-2xl border border-stone-200 bg-[#f7f3eb] px-4 py-3 text-sm text-stone-700">
+                {syncMessage}
+              </div>
+            ) : null}
           </div>
         </Panel>
       </div>

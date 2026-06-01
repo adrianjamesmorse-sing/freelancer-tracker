@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useTrackerData } from '../hooks/useTrackerData'
 import { formatDate } from '../lib/format'
 import { Icon } from './Icon'
@@ -50,6 +51,7 @@ const SIDEBAR_KEY = 'vertex-sidebar-collapsed'
 export function Layout({ children }: PropsWithChildren) {
   const location = useLocation()
   const { notifications } = useTrackerData()
+  const { user, signOut, canAccessSection, canAccessPath } = useAuth()
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem(SIDEBAR_KEY) === 'true'
@@ -74,14 +76,19 @@ export function Layout({ children }: PropsWithChildren) {
 
   const queuedCount = notifications.filter((item) => item.status === 'queued').length
 
+  const visibleAppLinks = useMemo(
+    () => appLinks.filter((app) => canAccessSection(app.key)),
+    [canAccessSection],
+  )
+
   const currentApp =
-    appLinks.find((app) =>
+    visibleAppLinks.find((app) =>
       app.match.some(
         (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
       ),
-    ) ?? appLinks[0]
+    ) ?? visibleAppLinks[0] ?? appLinks[0]
 
-  const links =
+  const sectionLinks =
     currentApp.key === 'feedback'
       ? feedbackLinks
       : currentApp.key === 'projects'
@@ -89,6 +96,8 @@ export function Layout({ children }: PropsWithChildren) {
         : currentApp.key === 'admin'
           ? adminLinks
           : freelancerLinks
+
+  const links = sectionLinks.filter((link) => canAccessPath(link.to))
 
   return (
     <>
@@ -107,7 +116,7 @@ export function Layout({ children }: PropsWithChildren) {
               className="header-app-nav flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto sm:gap-1"
               aria-label="Application sections"
             >
-              {appLinks.map((app) => {
+              {visibleAppLinks.map((app) => {
                 const active = currentApp.key === app.key
                 return (
                   <NavLink
@@ -130,6 +139,19 @@ export function Layout({ children }: PropsWithChildren) {
             </nav>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {user ? (
+                <div className="hidden max-w-[180px] items-center gap-2 rounded-2xl border border-stone-200 bg-white/90 px-2.5 py-1.5 sm:flex">
+                  <span className="truncate text-xs font-medium text-stone-800">{user.fullName}</span>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="shrink-0 text-xs text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : null}
+
               <button
                 className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-stone-700 transition hover:border-stone-300 hover:bg-white sm:h-9 sm:w-9 lg:hidden"
                 onClick={() => setMobileOpen(true)}

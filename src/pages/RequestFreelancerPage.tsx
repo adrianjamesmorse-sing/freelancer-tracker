@@ -126,9 +126,28 @@ export function RequestFreelancerPage() {
         <div className="page-header">
           <div>
             <h2 className="page-title">Request Freelancer</h2>
-            <p className="page-description max-w-4xl whitespace-pre-line">
-            {'You wish to onboard a freelancer on your project. Please fill out this questionnaire so we can prepare their contract and NDA.\nOnce signed, we can create a Singulier email address for them and grant access to Singulier Teams\nAs a reminder, you are supposed to have filled the spending request before to validate the budget with the partner of your project\n(Singulier >> Employee Resources >> Internal >> Finance & Legal)'}
-          </p>
+            <div className="page-description max-w-4xl">
+              <p>
+                Please complete this questionnaire to onboard a freelancer to your project. We’ll use
+                it to prepare their contract and NDA.
+              </p>
+              <p className="mt-3">
+                Once both documents are signed, we can create a Singulier email address for them and
+                give them access to Singulier Teams.
+              </p>
+              <p className="system-highlight">
+                Please note that you should have already submitted a spending request to get the
+                project budget approved by the partner in charge. You can find this here:{' '}
+                <a
+                  href="https://squadigital.sharepoint.com/:f:/s/Singulier/IgCKLjPsaya_Sp4os_p-vkJ5AStreflHm02sQv3_UUY76dA"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Finance &amp; Legal
+                </a>
+                .
+              </p>
+            </div>
           </div>
         </div>
 

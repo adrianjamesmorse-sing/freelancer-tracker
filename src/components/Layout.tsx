@@ -10,9 +10,9 @@ type AppKey = 'freelancers' | 'feedback' | 'projects' | 'admin'
 
 const freelancerLinks = [
   { to: '/', label: 'Dashboard', icon: 'dashboard' as const },
+  { to: '/request', label: 'Request Freelancer', icon: 'sparkles' as const },
   { to: '/freelancers', label: 'Freelancers', icon: 'users' as const },
-  { to: '/freelancers/request', label: 'Request Freelancer', icon: 'sparkles' as const },
-  { to: '/freelancers/onboarding', label: 'Freelancer Onboarding', icon: 'users' as const },
+  { to: '/onboarding', label: 'Freelancer Onboarding', icon: 'users' as const },
   { to: '/financials', label: 'Financials', icon: 'coins' as const },
   { to: '/imports', label: 'Imports', icon: 'upload' as const },
   { to: '/notifications', label: 'Notifications', icon: 'bell' as const },
@@ -38,7 +38,7 @@ const appLinks: Array<{
     to: '/',
     label: 'Freelancers',
     icon: 'users',
-    match: ['/', '/freelancers', '/financials', '/imports', '/notifications'],
+    match: ['/', '/freelancers', '/request', '/onboarding', '/financials', '/imports', '/notifications'],
   },
   { key: 'feedback', to: '/feedback', label: 'Feedback', icon: 'message-square', match: ['/feedback'] },
   { key: 'projects', to: '/projects', label: 'Projects', icon: 'folder', match: ['/projects'] },
@@ -93,17 +93,20 @@ export function Layout({ children }: PropsWithChildren) {
   return (
     <>
       <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(159,135,104,0.10),transparent_24%),radial-gradient(circle_at_top_right,rgba(127,142,108,0.10),transparent_22%),linear-gradient(180deg,#fbf8f2_0%,#f4efe6_100%)] text-stone-900">
-        <header className="sticky top-0 z-30 h-[50px] border-b border-stone-200/80 bg-[#f7f2e8]/92 backdrop-blur-xl">
-          <div className="mx-auto flex h-full max-w-[1920px] items-center gap-3 px-3 sm:px-4 xl:px-5">
+        <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-[#f7f2e8]/92 backdrop-blur-xl">
+          <div className="mx-auto flex h-[50px] max-w-[1920px] items-center gap-2 px-2 sm:gap-3 sm:px-4 xl:px-5">
             <Link
               to="/"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-brand-700 shadow-sm"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-brand-700 shadow-sm sm:h-9 sm:w-9"
               title="Vertex"
             >
-              <Icon name="vertex" className="h-5 w-5" />
+              <Icon name="vertex" className="h-4 w-4 sm:h-5 sm:w-5" />
             </Link>
 
-            <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex">
+            <nav
+              className="header-app-nav flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto sm:gap-1"
+              aria-label="Application sections"
+            >
               {appLinks.map((app) => {
                 const active = currentApp.key === app.key
                 return (
@@ -111,23 +114,24 @@ export function Layout({ children }: PropsWithChildren) {
                     key={app.to}
                     to={app.to}
                     end={app.to === '/'}
+                    title={app.label}
                     className={[
-                      'inline-flex h-8 items-center gap-2 rounded-xl px-3 text-sm font-medium transition',
+                      'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl px-2 text-xs font-medium transition sm:gap-2 sm:px-3 sm:text-sm',
                       active
                         ? 'border-b-2 border-olive-700 text-stone-900'
                         : 'text-stone-600 hover:bg-[#efe7da] hover:text-stone-900',
                     ].join(' ')}
                   >
-                    <Icon name={app.icon} className="h-4 w-4" />
-                    <span>{app.label}</span>
+                    <Icon name={app.icon} className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                    <span className="whitespace-nowrap">{app.label}</span>
                   </NavLink>
                 )
               })}
             </nav>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <button
-                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-stone-700 transition hover:border-stone-300 hover:bg-white md:hidden"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-stone-700 transition hover:border-stone-300 hover:bg-white sm:h-9 sm:w-9 lg:hidden"
                 onClick={() => setMobileOpen(true)}
                 type="button"
                 aria-label="Open navigation"
@@ -191,8 +195,8 @@ export function Layout({ children }: PropsWithChildren) {
                       link.to === '/' ||
                       link.to === '/feedback' ||
                       link.to === '/projects' ||
-                      link.to === '/freelancers/request' ||
-                      link.to === '/freelancers/onboarding'
+                      link.to === '/request' ||
+                      link.to === '/onboarding'
                     }
                     className={({ isActive }) =>
                       [

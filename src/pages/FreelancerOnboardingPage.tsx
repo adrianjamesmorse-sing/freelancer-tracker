@@ -45,21 +45,19 @@ export function FreelancerOnboardingPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="page-shell">
+      <div className="page-header">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight text-stone-900">
-            Freelancer Onboarding
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm text-stone-600">
+          <h2 className="page-title">Freelancer Onboarding</h2>
+          <p className="page-description">
             Track freelancer requests through the onboarding funnel from new submission to
             complete setup.
           </p>
         </div>
 
         <Link
-          to="/freelancers/request"
-          className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+          to="/request"
+          className="btn-primary"
         >
           Request Freelancer
         </Link>
@@ -89,9 +87,9 @@ export function FreelancerOnboardingPage() {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border border-stone-200 bg-white/85 p-5 shadow-panel">
+    <div className="summary-card">
       <div className="text-sm text-stone-500">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-stone-950">{value}</div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">{value}</div>
     </div>
   )
 }
@@ -159,7 +157,7 @@ function StageColumn({
                   <button
                     type="button"
                     onClick={() => onForward(item.id)}
-                    className="rounded-full bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-800"
+                    className="btn-primary-sm"
                   >
                     Move forward
                   </button>

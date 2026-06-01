@@ -23,9 +23,9 @@ function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/freelancers" element={<FreelancersPage />} />
-          <Route path="/freelancers/request" element={<RequestFreelancerPage />} />
-          <Route path="/freelancers/onboarding" element={<FreelancerOnboardingPage />} />
           <Route path="/freelancers/:id" element={<FreelancerDetailPage />} />
+          <Route path="/request" element={<RequestFreelancerPage />} />
+          <Route path="/onboarding" element={<FreelancerOnboardingPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/financials" element={<FinancialsPage />} />

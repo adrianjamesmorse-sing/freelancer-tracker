@@ -122,14 +122,14 @@ export function RequestFreelancerPage() {
 
   return (
     <>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-semibold tracking-tight text-stone-900">
-            Request Freelancer
-          </h2>
-          <p className="mt-3 max-w-4xl whitespace-pre-line text-sm leading-6 text-stone-600">
-            {'You wish to onboard a freelancer on your project. Please fill out this questionnaire so we can prepare their contract and NDA. Once signed, we can create a Singulier email address for them and grant access to Singulier Teams\nAs a reminder, you are supposed to have filled the spending request before to validate the budget with the partner of your project (Singulier >> Employee Resources >> Internal >> Finance & Legal)'}
+      <div className="page-shell">
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Request Freelancer</h2>
+            <p className="page-description max-w-4xl whitespace-pre-line">
+            {'You wish to onboard a freelancer on your project. Please fill out this questionnaire so we can prepare their contract and NDA.\nOnce signed, we can create a Singulier email address for them and grant access to Singulier Teams\nAs a reminder, you are supposed to have filled the spending request before to validate the budget with the partner of your project\n(Singulier >> Employee Resources >> Internal >> Finance & Legal)'}
           </p>
+          </div>
         </div>
 
         {message ? (
@@ -388,7 +388,7 @@ export function RequestFreelancerPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-60"
+                className="btn-primary px-4 py-2"
               >
                 {isSubmitting ? 'Submitting…' : 'Submit freelancer request'}
               </button>
@@ -406,7 +406,7 @@ export function RequestFreelancerPage() {
           <button
             type="button"
             onClick={() => setShowRegistrationError(false)}
-            className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+            className="btn-primary px-4 py-2"
           >
             Understood
           </button>

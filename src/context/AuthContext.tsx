@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from 'react'
@@ -66,9 +67,17 @@ function useAuthContextValue(
   const [tokenRoles, setTokenRoles] = useState<string[]>([])
 
   const configured = isEntraConfigured()
+  const lastRefreshRef = useRef<number | null>(null)
 
   const refreshProfile = useCallback(
     async (preferredToken?: string, preferredAccessToken?: string) => {
+      const REFRESH_COOLDOWN = 5000 // ms
+      const now = Date.now()
+      if (lastRefreshRef.current && now - lastRefreshRef.current < REFRESH_COOLDOWN) {
+        return
+      }
+      lastRefreshRef.current = now
+
       if (isAuthDisabled()) {
         setDevMode(true)
         setUser(devUser)
@@ -180,6 +189,10 @@ function useAuthContextValue(
           setAuthErrorDetails(details)
         }
       }
+      // allow another attempt after cooldown
+      setTimeout(() => {
+        lastRefreshRef.current = null
+      }, 5000)
     },
     [msal],
   )

@@ -33,7 +33,7 @@ jobs:
           cache: npm
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build frontend
         run: npm run build
@@ -62,7 +62,7 @@ jobs:
           skip_app_build: true
           api_location: "api"
           api_build_command: |
-            npm install
+            npm ci --legacy-peer-deps
             npm run build
             mv dist/* . || true
             rmdir dist || true

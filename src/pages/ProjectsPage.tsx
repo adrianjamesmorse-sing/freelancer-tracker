@@ -4,6 +4,7 @@ import { Modal } from '../components/Modal'
 import { Panel } from '../components/Panel'
 import { StaffPicker } from '../components/StaffPicker'
 import { useTrackerData } from '../hooks/useTrackerData'
+import { useAuth } from '../context/AuthContext'
 import { formatDate } from '../lib/format'
 import type { Entity, NewProjectInput } from '../types'
 
@@ -21,6 +22,9 @@ const initialForm: NewProjectInput = {
 
 export function ProjectsPage() {
   const { projects, getAllocationsForProject, addProject, removeProject, isProjectsLoaded, isAllocationsLoaded } = useTrackerData()
+  const { roles, user } = useAuth()
+  const isEditor = roles.includes('editor') || roles.includes('admin')
+  const isViewerOnly = !isEditor && roles.includes('viewer')
   const [form, setForm] = useState<NewProjectInput>(initialForm)
   const [message, setMessage] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -42,6 +46,11 @@ export function ProjectsPage() {
       end: ends[ends.length - 1] ?? '',
     }
   }), [projects, getAllocationsForProject])
+
+  const visibleRows = useMemo(() => {
+    if (!isViewerOnly || !user) return rows
+    return rows.filter((row) => row.project.projectManagerEmail === user.email)
+  }, [rows, isViewerOnly, user])
 
   const filteredRows = useMemo(() => {
     const searchValue = search.trim().toLowerCase()
@@ -116,14 +125,18 @@ export function ProjectsPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
-        >
-          <span aria-hidden="true">＋</span>
-          Add project
-        </button>
+        {isEditor ? (
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800"
+          >
+            <span aria-hidden="true">＋</span>
+            Add project
+          </button>
+        ) : isViewerOnly ? (
+          <Link to="/request-freelancer" className="inline-flex items-center gap-2 rounded-full border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">Request freelancer</Link>
+        ) : null}
       </div>
 
       {message ? (
@@ -176,7 +189,7 @@ export function ProjectsPage() {
                   <tr>
                     <td colSpan={6} className="px-4 py-10 text-center text-stone-500">No projects found.</td>
                   </tr>
-                ) : filteredRows.map((row) => (
+                ) : (isViewerOnly ? visibleRows : filteredRows).map((row) => (
                   <tr key={row.project.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50/70">
                     <td className="px-4 py-3 font-medium text-stone-900">
                       <Link to={`/projects/${row.project.id}`} className="hover:text-stone-700">

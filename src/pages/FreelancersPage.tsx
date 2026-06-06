@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { Modal } from '../components/Modal'
 import { Panel } from '../components/Panel'
 import { StatusBadge } from '../components/StatusBadge'
@@ -33,6 +34,9 @@ const initialForm: NewFreelancerInput = {
 
 export function FreelancersPage() {
   const { freelancers, getAllocationsForFreelancer, getProjectById, addFreelancer, updateFreelancer, removeFreelancer } = useTrackerData()
+  const { roles, user } = useAuth()
+  const isEditor = roles.includes('editor') || roles.includes('admin')
+  const isViewerOnly = !isEditor && roles.includes('viewer')
   const [form, setForm] = useState<NewFreelancerInput>(initialForm)
   const [message, setMessage] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -56,6 +60,15 @@ export function FreelancersPage() {
       entity: firstProject?.entity ?? 'No entity',
     }
   }), [freelancers, getAllocationsForFreelancer, getProjectById])
+
+  // If the current user is a viewer-only role, filter to freelancers they manage/own.
+  const visibleRows = useMemo(() => {
+    if (!isViewerOnly || !user) return rows
+    return rows.filter((row) => {
+      const allocations = getAllocationsForFreelancer(row.freelancer.id)
+      return allocations.some((a) => a.ownerManagerEmail === user.email) || row.freelancer.personalEmail === user.email
+    })
+  }, [rows, isViewerOnly, user, getAllocationsForFreelancer])
 
   const filteredRows = useMemo(() => {
     const searchValue = search.trim().toLowerCase()
@@ -144,14 +157,18 @@ export function FreelancersPage() {
       <Panel
         title="All freelancers"
         action={
-          <button
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]"
-            onClick={openCreateModal}
-            type="button"
-          >
-            <span aria-hidden="true">＋</span>
-            <span>Add freelancer</span>
-          </button>
+          isEditor ? (
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-[#efe7da] px-4 py-2 text-sm font-medium text-stone-800 hover:bg-[#e6dccb]"
+              onClick={openCreateModal}
+              type="button"
+            >
+              <span aria-hidden="true">＋</span>
+              <span>Add freelancer</span>
+            </button>
+          ) : isViewerOnly ? (
+            <Link to="/request-freelancer" className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 hover:bg-stone-50">Request freelancer</Link>
+          ) : null
         }
       >
         <div className="space-y-4">
@@ -195,7 +212,7 @@ export function FreelancersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-200/80">
-                  {filteredRows.map((row) => (
+                  {(isViewerOnly ? visibleRows : filteredRows).map((row) => (
                     <tr key={row.freelancer.id} className="hover:bg-[#fbf7ef]">
                       <td className="px-4 py-3 align-top">
                         <Link to={`/freelancers/${row.freelancer.id}`} className="font-medium text-stone-900 hover:text-brand-700">
@@ -213,20 +230,26 @@ export function FreelancersPage() {
                       <td className="px-4 py-3 align-top text-stone-500">{row.entity}</td>
                       <td className="px-4 py-3 align-top">
                         <div className="flex items-center gap-2">
-                          <button
+                          {isEditor ? (
+                            <>
+                              <button
                             className="rounded-lg border border-stone-300 bg-[#f8f3ea] px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-brand-400/40 hover:text-stone-900"
                             onClick={() => openEditModal(row.freelancer)}
                             type="button"
                           >
                             Edit
                           </button>
-                          <button
-                            className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                            onClick={() => void handleRemove(row.freelancer)}
-                            type="button"
-                          >
-                            Remove
-                          </button>
+                              <button
+                                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                                onClick={() => void handleRemove(row.freelancer)}
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                            </>
+                          ) : (
+                            <Link to="/request-freelancer" className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100">Request</Link>
+                          )}
                         </div>
                       </td>
                     </tr>

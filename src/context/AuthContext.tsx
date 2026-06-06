@@ -96,7 +96,19 @@ function useAuthContextValue(
             'Microsoft redirected back to Vertex, but no sign-in session was stored. Confirm the Entra redirect URI exactly matches ' +
               getEntraClientSettings().redirectUri,
           )
-          setAuthErrorDetails(null)
+          try {
+            const details = [
+              `Location: ${window.location.href}`,
+              `Search: ${window.location.search}`,
+              `Hash: ${window.location.hash}`,
+              '',
+              'Session storage snapshot:',
+              JSON.stringify(Object.fromEntries(Object.keys(sessionStorage).map((k) => [k, sessionStorage.getItem(k)])), null, 2),
+            ].join('\n\n')
+            setAuthErrorDetails(details)
+          } catch (e) {
+            setAuthErrorDetails(String(e))
+          }
         }
         return
       }
@@ -182,11 +194,30 @@ function useAuthContextValue(
 
         if (msal) {
           await getMsalInstance().initialize()
-          const redirectResult = await handleRedirectOnce(msal.instance)
-          if (redirectResult?.account) {
-            msal.instance.setActiveAccount(redirectResult.account)
-            redirectToken = redirectResult.idToken
-            redirectAccessToken = redirectResult.accessToken
+          try {
+            const redirectResult = await handleRedirectOnce(msal.instance)
+            if (redirectResult?.account) {
+              msal.instance.setActiveAccount(redirectResult.account)
+              redirectToken = redirectResult.idToken
+              redirectAccessToken = redirectResult.accessToken
+            }
+          } catch (redirectErr) {
+            // Surface redirect errors for developer debugging
+            try {
+              const details = redirectErr instanceof Error ? redirectErr.stack ?? redirectErr.message : JSON.stringify(redirectErr, Object.getOwnPropertyNames(redirectErr as object), 2)
+              setAuthError('Error handling Microsoft redirect')
+              setAuthErrorDetails([
+                `Redirect error: ${String(redirectErr)}`,
+                `Location: ${window.location.href}`,
+                `Search: ${window.location.search}`,
+                `Hash: ${window.location.hash}`,
+                '',
+                details,
+              ].join('\n\n'))
+            } catch (e) {
+              setAuthError('Error handling Microsoft redirect')
+              setAuthErrorDetails(String(redirectErr))
+            }
           }
         }
 

@@ -1,9 +1,17 @@
 import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions'
+import { authenticateRequest, hasRole, isAuthConfigured } from '../lib/entraAuth.js'
 import { query } from '../lib/db.js'
 import { error, json } from '../lib/response.js'
 
 export async function allocationsCreate(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   try {
+    if (isAuthConfigured()) {
+      const user = await authenticateRequest(request)
+      if (!user || !hasRole(user, ['editor', 'admin'])) {
+        return error(401, 'Unauthorized')
+      }
+    }
+
     const body = await request.json() as Record<string, unknown>
 
     const result = await query(

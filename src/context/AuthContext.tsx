@@ -168,22 +168,19 @@ function useAuthContextValue(
             }, null)
 
             if (msalIdToken) {
-                const showDebug = devMode || (typeof window !== 'undefined' && (window.location.hostname.includes('localhost') || new URLSearchParams(window.location.search).has('debugAuth')))
-                if (showDebug) {
-                  try {
-                    const details = [
-                      `Location: ${window.location.href}`,
-                      `Search: ${window.location.search}`,
-                      `Hash: ${window.location.hash}`,
-                      '',
-                      'Session storage snapshot:',
-                      JSON.stringify(Object.fromEntries(Object.keys(sessionStorage).map((k) => [k, sessionStorage.getItem(k)])), null, 2),
-                    ].join('\n\n')
-                    setAuthErrorDetails(details)
-                  } catch (e) {
-                    setAuthErrorDetails(String(e))
-                  }
-                }
+              token = msalIdToken
+            }
+          } catch {
+            // ignore fallback errors
+          }
+        }
+
+        if (!token) {
+          throw new Error('Microsoft sign-in did not return an ID token.')
+        }
+
+        setIdToken(token)
+
         const profile = await fetchAuthMe(token, accessToken)
         if (profile.devMode) {
           setDevMode(true)

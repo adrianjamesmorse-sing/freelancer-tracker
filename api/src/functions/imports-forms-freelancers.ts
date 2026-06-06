@@ -1,4 +1,5 @@
 import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions'
+import { authenticateRequest, hasRole, isAuthConfigured } from '../lib/entraAuth.js'
 import { importFormsFreelancers } from '../lib/formsFreelancersImport.js'
 import { error, json } from '../lib/response.js'
 
@@ -13,6 +14,13 @@ export async function importsFormsFreelancers(
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
   try {
+    if (isAuthConfigured()) {
+      const user = await authenticateRequest(request)
+      if (!user || !hasRole(user, ['editor', 'admin'])) {
+        return error(401, 'Unauthorized')
+      }
+    }
+
     const body = (await request.json()) as ImportRequestBody
 
     const fileName = body.fileName ?? null

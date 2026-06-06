@@ -142,6 +142,39 @@ function useAuthContextValue(
           accessToken = accessToken ?? tokenResult.accessToken
         }
 
+        // If MSAL did not return an ID token, attempt to read it from MSAL's sessionStorage cache.
+        // MSAL stores items like { credentialType: 'IdToken', credential: '<jwt>' } in sessionStorage.
+        if (!token) {
+          try {
+            const msalIdToken = Object.keys(sessionStorage).reduce<string | null>((found, key) => {
+              if (found) return found
+              try {
+                const raw = sessionStorage.getItem(key)
+                if (!raw) return null
+                const parsed = JSON.parse(raw)
+                if (parsed && typeof parsed === 'object') {
+                  if (parsed.credentialType === 'IdToken' && typeof parsed.credential === 'string') {
+                    return parsed.credential
+                  }
+                  if (parsed.idToken) {
+                    const candidate = Array.isArray(parsed.idToken) ? parsed.idToken[0] : parsed.idToken
+                    if (typeof candidate === 'string') return candidate
+                  }
+                }
+              } catch {
+                return null
+              }
+              return null
+            }, null)
+
+            if (msalIdToken) {
+              token = msalIdToken
+            }
+          } catch {
+            // ignore fallback errors
+          }
+        }
+
         if (!token) {
           throw new Error('Microsoft sign-in did not return an ID token.')
         }

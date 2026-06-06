@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import type { MouseEvent } from 'react'
 import { ComposableMap, Geographies, Geography, Sphere, ZoomableGroup } from 'react-simple-maps'
 import type { CountryMapDatum } from '../lib/geo'
@@ -35,6 +35,33 @@ export function WorldMapPanel({ countries, compact = false }: WorldMapPanelProps
     return map
   }, [countries])
 
+  const [geographyData, setGeographyData] = useState<any | null>(null)
+  const [geoError, setGeoError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+
+    void (async () => {
+      try {
+        const res = await fetch(geographyUrl, { signal: controller.signal })
+        if (!res.ok) throw new Error(`Failed to fetch geography (${res.status})`)
+        const json = await res.json()
+        if (!cancelled) setGeographyData(json)
+      } catch (err) {
+        if (!cancelled) {
+          setGeoError(String(err))
+          setGeographyData(null)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [])
+
   const totalCountries = countries.length
 
   return (
@@ -65,8 +92,11 @@ export function WorldMapPanel({ countries, compact = false }: WorldMapPanelProps
             <ComposableMap projection="geoMercator" projectionConfig={{ scale: compact ? 170 : 155 }} style={{ width: '100%', height: compact ? '430px' : '500px' }}>
               <ZoomableGroup center={position.coordinates} zoom={position.zoom} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} onMoveEnd={(position: { coordinates: [number, number]; zoom: number }) => setPosition({ coordinates: position.coordinates, zoom: position.zoom })}>
                 <Sphere stroke="#e5ddd0" strokeWidth={0.8} fill="#fbf8f1" />
-                <Geographies geography={geographyUrl}>
-                  {({ geographies }: { geographies: Array<{ rsmKey: string; properties?: { name?: string } }> }) => geographies.map((geography) => {
+                {geoError ? (
+                  <text x="10" y="20" style={{ fontSize: 12, fill: '#b91c1c' }}>Failed to load map</text>
+                ) : geographyData ? (
+                  <Geographies geography={geographyData}>
+                    {({ geographies }: { geographies: Array<{ rsmKey: string; properties?: { name?: string } }> }) => geographies.map((geography) => {
                     const normalizedName = normalizeGeographyName(String(geography.properties?.name ?? ''))
                     const match = countryMap.get(normalizedName)
                     return (
@@ -86,8 +116,9 @@ export function WorldMapPanel({ countries, compact = false }: WorldMapPanelProps
                         }}
                       />
                     )
-                  })}
-                </Geographies>
+                    })}
+                  </Geographies>
+                ) : null}
               </ZoomableGroup>
             </ComposableMap>
 

@@ -209,6 +209,17 @@ export async function authenticateRequest(request: HttpRequest): Promise<Authent
     return null
   }
 
+  // Allow the client to supply the ID token explicitly using a custom header.
+  // This helps when hosting layers (Static Web Apps / EasyAuth) overwrite the
+  // `Authorization` header with platform-signed tokens.
+  const explicitIdToken =
+    request.headers.get('x-vertex-id-token') ?? request.headers.get('x-vertex-idtoken') ?? undefined
+
+  if (explicitIdToken) {
+    const accessToken = request.headers.get('x-vertex-access-token') ?? undefined
+    return verifyBearerToken(explicitIdToken, { accessToken })
+  }
+
   const header = request.headers.get('authorization') ?? ''
   const match = header.match(/^Bearer\s+(.+)$/i)
   if (!match) {

@@ -60,6 +60,7 @@ export function fetchAuthMe(idToken: string, accessToken?: string) {
   return apiFetch<{ authenticated: boolean; devMode?: boolean; user: AuthUser }>('/auth/me', {
     headers: {
       authorization: `Bearer ${idToken}`,
+      'x-vertex-id-token': idToken,
       ...(accessToken ? { 'x-vertex-access-token': accessToken } : {}),
     },
   })

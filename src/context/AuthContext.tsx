@@ -29,6 +29,7 @@ type AuthContextValue = {
   roles: VertexRole[]
   idToken: string | null
   authError: string | null
+  authErrorDetails: string | null
   tokenRoles: string[]
   signIn: () => Promise<void>
   signOut: () => Promise<void>
@@ -61,6 +62,7 @@ function useAuthContextValue(
   const [user, setUser] = useState<AuthUser | null>(isAuthDisabled() ? devUser : null)
   const [idToken, setIdToken] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authErrorDetails, setAuthErrorDetails] = useState<string | null>(null)
   const [tokenRoles, setTokenRoles] = useState<string[]>([])
 
   const configured = isEntraConfigured()
@@ -72,6 +74,7 @@ function useAuthContextValue(
         setUser(devUser)
         setIdToken(null)
         setAuthError(null)
+        setAuthErrorDetails(null)
         setTokenRoles([])
         return
       }
@@ -93,12 +96,14 @@ function useAuthContextValue(
             'Microsoft redirected back to Vertex, but no sign-in session was stored. Confirm the Entra redirect URI exactly matches ' +
               getEntraClientSettings().redirectUri,
           )
+          setAuthErrorDetails(null)
         }
         return
       }
 
       instance.setActiveAccount(account)
       setAuthError(null)
+      setAuthErrorDetails(null)
 
       const claimRoles = extractRoleStrings(account.idTokenClaims ?? undefined)
       setTokenRoles(claimRoles)
@@ -142,12 +147,25 @@ function useAuthContextValue(
         const mapped = mapRoleStrings(claimRoles)
         const baseMessage = err instanceof Error ? err.message : 'Sign-in failed'
 
+        let details: string | null = null
+        try {
+          if (err instanceof Error) {
+            details = err.stack ?? err.message
+          } else {
+            details = JSON.stringify(err, Object.getOwnPropertyNames(err as object), 2)
+          }
+        } catch (e) {
+          details = String(err)
+        }
+
         if (mapped.length && baseMessage.includes('not authorized')) {
           setAuthError(
             `${baseMessage} Your token includes: ${claimRoles.join(', ')}. Vertex mapped that to: ${mapped.join(', ')}. If this persists, redeploy the latest API build.`,
           )
+          setAuthErrorDetails(details)
         } else {
           setAuthError(baseMessage)
+          setAuthErrorDetails(details)
         }
       }
     },
@@ -199,6 +217,7 @@ function useAuthContextValue(
   const signIn = useCallback(async () => {
     if (!msal) return
     setAuthError(null)
+    setAuthErrorDetails(null)
     await msal.instance.loginRedirect({
       scopes: getLoginScopes(),
       prompt: 'select_account',
@@ -210,6 +229,7 @@ function useAuthContextValue(
     setUser(null)
     setIdToken(null)
     setAuthError(null)
+    setAuthErrorDetails(null)
     setTokenRoles([])
     if (!msal) return
     await msal.instance.logoutRedirect({
@@ -230,6 +250,7 @@ function useAuthContextValue(
       roles,
       idToken,
       authError,
+        authErrorDetails,
       tokenRoles,
       signIn,
       signOut,
@@ -246,6 +267,7 @@ function useAuthContextValue(
       roles,
       idToken,
       authError,
+      authErrorDetails,
       tokenRoles,
       signIn,
       signOut,

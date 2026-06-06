@@ -7,7 +7,7 @@ import { isAuthDisabled } from '../lib/entraSettings'
 
 export function LoginPage() {
   const location = useLocation()
-  const { ready, isAuthenticated, configured, authError, tokenRoles, signIn } = useAuth()
+  const { ready, isAuthenticated, configured, authError, authErrorDetails, tokenRoles, signIn, devMode } = useAuth()
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
   const mappedRoles = mapRoleStrings(tokenRoles)
   const redirectUri = getEntraClientSettings().redirectUri
@@ -43,6 +43,12 @@ export function LoginPage() {
           <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
             <div className="font-medium">Sign-in could not be completed</div>
             <div className="mt-1 leading-6">{authError}</div>
+            {authErrorDetails && (typeof window !== 'undefined') && (devMode || window.location.hostname.includes('localhost') || new URLSearchParams(location.search).has('debugAuth')) ? (
+              <details className="mt-3 rounded-md border border-stone-100 bg-white/60 p-3 text-xs text-stone-700">
+                <summary className="cursor-pointer font-medium">Developer details</summary>
+                <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-[11px]">{authErrorDetails}</pre>
+              </details>
+            ) : null}
           </div>
         ) : null}
 

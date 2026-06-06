@@ -124,6 +124,17 @@ export async function verifyBearerToken(
   let payload: JWTPayload
 
   try {
+    // Quick pre-check: if the token's audience is the Microsoft Graph resource
+    // client id, surface a clear error to avoid confusing JWKS alg errors.
+    const maybe = decodeJwtPayload(token)
+    const maybeAud = maybe && maybe.aud
+    const graphAud = '00000003-0000-0000-c000-000000000000'
+    if (maybeAud === graphAud || (Array.isArray(maybeAud) && maybeAud.includes(graphAud))) {
+      throw new Error(
+        `Token appears to be a Microsoft Graph access token (aud=${graphAud}). The API expects an ID token issued for the application (aud=${clientId}). Ensure the frontend sends the ID token to the API.`,
+      )
+    }
+
     const verified = await jwtVerify(token, jwks, {
       issuer: issuerForTenant(tenantId),
       audience: clientId,

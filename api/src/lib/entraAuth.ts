@@ -95,17 +95,6 @@ function decodeJwtPayload(token: string): JWTPayload | null {
   }
 }
 
-function decodeJwtHeader(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length < 1) return null
-    const json = Buffer.from(parts[0], 'base64url').toString('utf8')
-    return JSON.parse(json) as Record<string, unknown>
-  } catch {
-    return null
-  }
-}
-
 export async function verifyBearerToken(
   token: string,
   options?: { accessToken?: string },
@@ -124,17 +113,6 @@ export async function verifyBearerToken(
   let payload: JWTPayload
 
   try {
-    // Quick pre-check: if the token's audience is the Microsoft Graph resource
-    // client id, surface a clear error to avoid confusing JWKS alg errors.
-    const maybe = decodeJwtPayload(token)
-    const maybeAud = maybe && maybe.aud
-    const graphAud = '00000003-0000-0000-c000-000000000000'
-    if (maybeAud === graphAud || (Array.isArray(maybeAud) && maybeAud.includes(graphAud))) {
-      throw new Error(
-        `Token appears to be a Microsoft Graph access token (aud=${graphAud}). The API expects an ID token issued for the application (aud=${clientId}). Ensure the frontend sends the ID token to the API.`,
-      )
-    }
-
     const verified = await jwtVerify(token, jwks, {
       issuer: issuerForTenant(tenantId),
       audience: clientId,
@@ -143,21 +121,8 @@ export async function verifyBearerToken(
     payload = verified.payload
   } catch (err) {
     const hint = err instanceof Error ? err.message : 'Token validation failed'
-    const header = decodeJwtHeader(token)
-    const decoded = decodeJwtPayload(token)
-
-    const alg = header && typeof header.alg === 'string' ? header.alg : 'unknown'
-    const kid = header && typeof header.kid === 'string' ? header.kid : 'unknown'
-    const iss = decoded && typeof decoded.iss === 'string' ? decoded.iss : 'unknown'
-    const aud = decoded && (typeof decoded.aud === 'string' || Array.isArray(decoded.aud)) ? decoded.aud : 'unknown'
-
-    let extra = `alg=${alg}; kid=${kid}; iss=${iss}; aud=${JSON.stringify(aud)}`
-    if (alg === 'HS256' || alg === 'none') {
-      extra += ' (token alg looks like a symmetric or missing alg; expected RS256)'
-    }
-
     throw new Error(
-      `Could not validate your Microsoft sign-in token (${hint}). ${extra}. Confirm ENTRA_TENANT_ID and ENTRA_CLIENT_ID on the Static Web App match the Entra app used for login.`,
+      `Could not validate your Microsoft sign-in token (${hint}). Confirm ENTRA_TENANT_ID and ENTRA_CLIENT_ID on the Static Web App match the Entra app used for login.`,
     )
   }
 

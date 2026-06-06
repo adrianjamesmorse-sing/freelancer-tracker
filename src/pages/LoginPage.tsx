@@ -2,7 +2,6 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { mapRoleStrings } from '../lib/entraRoles'
-import { getEntraClientSettings } from '../lib/entraSettings'
 import { isAuthDisabled } from '../lib/entraSettings'
 
 export function LoginPage() {
@@ -10,7 +9,6 @@ export function LoginPage() {
   const { ready, isAuthenticated, configured, authError, authErrorDetails, tokenRoles, signIn, devMode } = useAuth()
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
   const mappedRoles = mapRoleStrings(tokenRoles)
-  const redirectUri = getEntraClientSettings().redirectUri
 
   if (isAuthDisabled()) {
     return <Navigate to={returnTo} replace />
@@ -65,13 +63,6 @@ export function LoginPage() {
               </div>
             )}
           </div>
-        ) : ready && configured && !authError ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
-            No <code>roles</code> claim on your token yet — that is normal. After you deploy the latest
-            API, Vertex will read your <code>vertex.admin</code> assignment from Microsoft Graph
-            instead. Ensure <code>ENTRA_CLIENT_SECRET</code> is set and Graph permission{' '}
-            <code>AppRoleAssignment.Read.All</code> is granted with admin consent.
-          </div>
         ) : null}
 
         {!ready ? (
@@ -89,9 +80,8 @@ export function LoginPage() {
         )}
 
         <p className="mt-5 text-xs leading-5 text-stone-500">
-          Redirect URI: <code>{redirectUri}</code>. Assign app roles on the Vertex{' '}
-          <strong>enterprise application</strong> (Users and groups), not only a security group in
-          Entra ID.
+          Assign app roles on the Vertex <strong>enterprise application</strong> (Users and groups).<br />
+          Redirect URI: <strong>https://vertex.singulier.co/login</strong>
         </p>
       </div>
     </div>

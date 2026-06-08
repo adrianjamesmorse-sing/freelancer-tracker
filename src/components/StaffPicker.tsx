@@ -35,7 +35,12 @@ export function StaffPicker({
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load staff directory')
+          const message = err instanceof Error ? err.message : ''
+          setError(
+            message.includes('Microsoft sign-in token') || message.includes('not authorized')
+              ? 'Staff directory could not be loaded. Please refresh and sign in again, or ask an administrator to check your Vertex access.'
+              : message || 'Failed to load staff directory',
+          )
         }
       } finally {
         if (!cancelled) {

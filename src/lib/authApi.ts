@@ -68,13 +68,21 @@ export function fetchAuthMe(idToken: string, accessToken?: string) {
 
 export function fetchStaff(idToken?: string) {
   return apiFetch<StaffMember[]>('/staff', {
-    headers: idToken ? { authorization: `Bearer ${idToken}` } : {},
+    headers: idToken
+      ? {
+          authorization: `Bearer ${idToken}`,
+          'x-vertex-id-token': idToken,
+        }
+      : {},
   })
 }
 
 export function syncStaffFromEntra(idToken: string) {
   return apiFetch<{ synced: number; skipped: number; total: number }>('/staff/sync', {
     method: 'POST',
-    headers: { authorization: `Bearer ${idToken}` },
+    headers: {
+      authorization: `Bearer ${idToken}`,
+      'x-vertex-id-token': idToken,
+    },
   })
 }

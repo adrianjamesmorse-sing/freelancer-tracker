@@ -79,6 +79,27 @@ export async function fetchAllStaffUsers(accessToken: string) {
   return users
 }
 
+export async function fetchUserPhotoDataUrl(accessToken: string, userId: string): Promise<string | null> {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(userId)}/photos/120x120/$value`,
+    {
+      headers: { authorization: `Bearer ${accessToken}` },
+    },
+  )
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    return null
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/jpeg'
+  const bytes = Buffer.from(await response.arrayBuffer())
+  return `data:${contentType};base64,${bytes.toString('base64')}`
+}
+
 type GraphAppRole = {
   id: string
   value: string

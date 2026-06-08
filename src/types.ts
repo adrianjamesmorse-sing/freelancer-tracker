@@ -84,6 +84,29 @@ export interface NewProjectInput {
   projectManagerEmail: string
 }
 
+export interface ProjectStaffAssignment {
+  id: string
+  projectId: string
+  staffId: string
+  assignmentRole: string
+  createdAt: string
+  entraUserId: string | null
+  email: string
+  fullName: string
+  jobTitle: string | null
+  department: string | null
+  officeLocation: string | null
+  mobilePhone: string | null
+  userPrincipalName: string | null
+  photoUrl: string | null
+  isActive: boolean
+}
+
+export interface NewProjectStaffAssignmentInput {
+  staffId: string
+  assignmentRole: string
+}
+
 export interface Allocation {
   id: string
   createdAt: string

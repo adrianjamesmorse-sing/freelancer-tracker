@@ -5,7 +5,9 @@ import type {
   NewAllocationInput,
   NewFreelancerInput,
   NewProjectInput,
+  NewProjectStaffAssignmentInput,
   Project,
+  ProjectStaffAssignment,
 } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -55,6 +57,24 @@ type ApiAllocationRow = {
   owner_manager_name: string | null
   owner_manager_email: string | null
   allocation_status: Allocation['allocationStatus']
+}
+
+type ApiProjectStaffRow = {
+  id: string
+  project_id: string
+  staff_id: string
+  assignment_role: string
+  created_at: string
+  entra_user_id: string | null
+  email: string
+  full_name: string
+  job_title: string | null
+  department: string | null
+  office_location: string | null
+  mobile_phone: string | null
+  user_principal_name: string | null
+  photo_url: string | null
+  is_active: boolean
 }
 
 function authHeaders(options?: ApiOptions): HeadersInit {
@@ -121,6 +141,26 @@ function mapAllocation(row: ApiAllocationRow): Allocation {
     ownerManagerName: row.owner_manager_name ?? '',
     ownerManagerEmail: row.owner_manager_email ?? '',
     allocationStatus: row.allocation_status,
+  }
+}
+
+function mapProjectStaff(row: ApiProjectStaffRow): ProjectStaffAssignment {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    staffId: row.staff_id,
+    assignmentRole: row.assignment_role,
+    createdAt: row.created_at,
+    entraUserId: row.entra_user_id,
+    email: row.email,
+    fullName: row.full_name,
+    jobTitle: row.job_title,
+    department: row.department,
+    officeLocation: row.office_location,
+    mobilePhone: row.mobile_phone,
+    userPrincipalName: row.user_principal_name,
+    photoUrl: row.photo_url,
+    isActive: row.is_active,
   }
 }
 
@@ -228,6 +268,43 @@ export async function updateProject(id: string, input: NewProjectInput, options?
   })
   const row = await parseJson<ApiProjectRow>(response)
   return mapProject(row)
+}
+
+export async function fetchProjectStaff(projectId: string, options?: ApiOptions): Promise<ProjectStaffAssignment[]> {
+  const response = await fetch(`${API_BASE}/projects/${projectId}/staff`, {
+    headers: authHeaders(options),
+  })
+  const rows = await parseJson<ApiProjectStaffRow[]>(response)
+  return rows.map(mapProjectStaff)
+}
+
+export async function createProjectStaff(
+  projectId: string,
+  input: NewProjectStaffAssignmentInput,
+  options?: ApiOptions,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/projects/${projectId}/staff`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
+    body: JSON.stringify(input),
+  })
+  if (!response.ok) {
+    await parseJson<never>(response)
+  }
+}
+
+export async function deleteProjectStaff(
+  projectId: string,
+  assignmentId: string,
+  options?: ApiOptions,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/projects/${projectId}/staff/${assignmentId}`, {
+    method: 'DELETE',
+    headers: authHeaders(options),
+  })
+  if (!response.ok) {
+    await parseJson<never>(response)
+  }
 }
 
 export async function deleteProject(id: string, options?: ApiOptions): Promise<void> {

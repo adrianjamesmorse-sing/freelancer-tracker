@@ -2,7 +2,12 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { authenticateRequest, hasRole, isAuthConfigured } from '../lib/entraAuth.js'
 import { preflight, withCors } from '../lib/cors.js'
 import { query } from '../lib/db.js'
-import { fetchAllStaffUsers, getGraphAccessToken, toStaffRecord } from '../lib/graphClient.js'
+import {
+  fetchAllStaffUsers,
+  fetchUserPhotoDataUrl,
+  getGraphAccessToken,
+  toStaffRecord,
+} from '../lib/graphClient.js'
 import { error, json } from '../lib/response.js'
 import { ensureStaffDirectorySchema } from '../lib/staffSchema.js'
 
@@ -43,12 +48,14 @@ app.http('staff-sync-post', {
           continue
         }
 
+        const photoUrl = await fetchUserPhotoDataUrl(accessToken, record.entraUserId)
+
         await query(
           `insert into staff (
              entra_user_id, email, full_name, job_title, department,
-             office_location, mobile_phone, user_principal_name, is_active, updated_at
+             office_location, mobile_phone, user_principal_name, photo_url, is_active, updated_at
            )
-           values ($1, $2, $3, $4, $5, $6, $7, $8, true, now())
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, now())
            on conflict (email) do update set
              entra_user_id = excluded.entra_user_id,
              full_name = excluded.full_name,
@@ -57,6 +64,7 @@ app.http('staff-sync-post', {
              office_location = excluded.office_location,
              mobile_phone = excluded.mobile_phone,
              user_principal_name = excluded.user_principal_name,
+             photo_url = coalesce(excluded.photo_url, staff.photo_url),
              is_active = true,
              updated_at = now()`,
           [
@@ -68,6 +76,7 @@ app.http('staff-sync-post', {
             record.officeLocation,
             record.mobilePhone,
             record.userPrincipalName,
+            photoUrl,
           ],
         )
 

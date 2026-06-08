@@ -6,6 +6,7 @@ import {
   notifications as seedNotifications,
   projects as seedProjects,
 } from '../data/mockData'
+import { useAuth } from './AuthContext'
 import {
   createAllocation as createAllocationApi,
   createFreelancer as createFreelancerApi,
@@ -87,6 +88,7 @@ const STORAGE_KEY = 'freelancer-tracker-store-v2'
 const TrackerContext = createContext<TrackerContextValue | null>(null)
 
 export function TrackerProvider({ children }: PropsWithChildren) {
+  const { ready: authReady, devMode, isAuthenticated, idToken } = useAuth()
   const [store, setStore] = useState<TrackerStore>(() => {
     const seed = getSeedStore()
     if (typeof window === 'undefined') return seed
@@ -110,8 +112,11 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
   }, [store])
 
+  const apiOptions = useMemo(() => ({ idToken }), [idToken])
+  const canLoadRemoteData = devMode || (authReady && isAuthenticated)
+
   const refreshFreelancers = async () => {
-    const freelancers = await fetchFreelancers()
+    const freelancers = await fetchFreelancers(apiOptions)
     setStore((current) => ({
       ...current,
       freelancers: freelancers.map((item) => ({
@@ -122,19 +127,21 @@ export function TrackerProvider({ children }: PropsWithChildren) {
   }
 
   const refreshProjects = async () => {
-    const projects = await fetchProjects()
+    const projects = await fetchProjects(apiOptions)
     setStore((current) => ({ ...current, projects }))
   }
 
   const refreshAllocations = async () => {
-    const allocations = await fetchAllocations()
+    const allocations = await fetchAllocations(apiOptions)
     setStore((current) => ({ ...current, allocations }))
   }
 
   useEffect(() => {
+    if (!canLoadRemoteData) return
+
     let isCancelled = false
 
-    fetchFreelancers()
+    fetchFreelancers(apiOptions)
       .then((freelancers: Freelancer[]) => {
         if (isCancelled) return
         setStore((current) => ({
@@ -152,7 +159,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         if (!isCancelled) setIsFreelancersLoaded(true)
       })
 
-    fetchProjects()
+    fetchProjects(apiOptions)
       .then((projects: Project[]) => {
         if (isCancelled) return
         setStore((current) => ({ ...current, projects }))
@@ -164,7 +171,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         if (!isCancelled) setIsProjectsLoaded(true)
       })
 
-    fetchAllocations()
+    fetchAllocations(apiOptions)
       .then((allocations: Allocation[]) => {
         if (isCancelled) return
         setStore((current) => ({ ...current, allocations }))
@@ -179,7 +186,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     return () => {
       isCancelled = true
     }
-  }, [])
+  }, [apiOptions, canLoadRemoteData])
 
   const freelancerMap = useMemo(
     () => new Map(store.freelancers.map((item) => [item.id, item])),
@@ -254,7 +261,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
           return { success: false, message: 'Freelancer already exists.' }
         }
 
-        const freelancer = await createFreelancerApi(preparedInput)
+        const freelancer = await createFreelancerApi(preparedInput, apiOptions)
 
         setStore((current) => ({
           ...current,
@@ -293,7 +300,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
           }
         }
 
-        const saved = await updateFreelancerApi(id, preparedInput)
+        const saved = await updateFreelancerApi(id, preparedInput, apiOptions)
 
         setStore((current) => ({
           ...current,
@@ -315,7 +322,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     },
     removeFreelancer: async (id) => {
       try {
-        await deleteFreelancer(id)
+        await deleteFreelancer(id, apiOptions)
 
         setStore((current) => {
           const allocationIds = current.allocations
@@ -344,17 +351,20 @@ export function TrackerProvider({ children }: PropsWithChildren) {
         )
         if (existing) return { success: false, message: 'Project already exists.' }
 
-        const project = await createProjectApi(input)
+        const project = await createProjectApi(input, apiOptions)
         setStore((current) => ({ ...current, projects: [project, ...current.projects] }))
         return { success: true, message: 'Project added.' }
       } catch (err) {
         console.error('Failed to create project', err)
-        return { success: false, message: 'Failed to add project.' }
+        return {
+          success: false,
+          message: err instanceof Error ? `Failed to add project: ${err.message}` : 'Failed to add project.',
+        }
       }
     },
     removeProject: async (id) => {
       try {
-        await deleteProjectApi(id)
+        await deleteProjectApi(id, apiOptions)
         setStore((current) => {
           const allocationIds = current.allocations
             .filter((item) => item.projectId === id)
@@ -406,7 +416,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
           }
         }
 
-        const allocation = await createAllocationApi(input)
+        const allocation = await createAllocationApi(input, apiOptions)
 
         const joinRule = store.notificationRules.find(
           (rule) => rule.triggerType === 'join' && rule.enabled,
@@ -452,7 +462,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
     },
     removeAllocation: async (id) => {
       try {
-        await deleteAllocationApi(id)
+        await deleteAllocationApi(id, apiOptions)
         setStore((current) => ({
           ...current,
           allocations: current.allocations.filter((item) => item.id !== id),
@@ -495,7 +505,7 @@ export function TrackerProvider({ children }: PropsWithChildren) {
       }))
     },
     importCsvFile: async (file) => {
-      const summary = await importFormsFreelancersCsv(file)
+      const summary = await importFormsFreelancersCsv(file, apiOptions)
 
       await Promise.all([
         refreshFreelancers(),

@@ -10,6 +10,10 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
+type ApiOptions = {
+  idToken?: string | null
+}
+
 type ApiFreelancerRow = {
   id: string
   created_at: string
@@ -53,10 +57,21 @@ type ApiAllocationRow = {
   allocation_status: Allocation['allocationStatus']
 }
 
+function authHeaders(options?: ApiOptions): HeadersInit {
+  if (!options?.idToken) return {}
+  return {
+    authorization: `Bearer ${options.idToken}`,
+    'x-vertex-id-token': options.idToken,
+  }
+}
+
 async function parseJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `Request failed with status ${response.status}`)
+    const payload = (await response.json().catch(() => null)) as
+      | { error?: string; details?: unknown }
+      | null
+    const details = typeof payload?.details === 'string' ? `: ${payload.details}` : ''
+    throw new Error(payload?.error ? `${payload.error}${details}` : `Request failed with status ${response.status}`)
   }
   return response.json() as Promise<T>
 }
@@ -149,109 +164,121 @@ function allocationPayload(input: NewAllocationInput) {
   }
 }
 
-export async function fetchFreelancers(): Promise<Freelancer[]> {
-  const response = await fetch(`${API_BASE}/freelancers`)
+export async function fetchFreelancers(options?: ApiOptions): Promise<Freelancer[]> {
+  const response = await fetch(`${API_BASE}/freelancers`, {
+    headers: authHeaders(options),
+  })
   const rows = await parseJson<ApiFreelancerRow[]>(response)
   return rows.map(mapFreelancer)
 }
 
-export async function createFreelancer(input: NewFreelancerInput): Promise<Freelancer> {
+export async function createFreelancer(input: NewFreelancerInput, options?: ApiOptions): Promise<Freelancer> {
   const response = await fetch(`${API_BASE}/freelancers`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(freelancerPayload(input)),
   })
   const row = await parseJson<ApiFreelancerRow>(response)
   return mapFreelancer(row)
 }
 
-export async function updateFreelancer(id: string, input: NewFreelancerInput): Promise<Freelancer> {
+export async function updateFreelancer(id: string, input: NewFreelancerInput, options?: ApiOptions): Promise<Freelancer> {
   const response = await fetch(`${API_BASE}/freelancers/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(freelancerPayload(input)),
   })
   const row = await parseJson<ApiFreelancerRow>(response)
   return mapFreelancer(row)
 }
 
-export async function deleteFreelancer(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/freelancers/${id}`, { method: 'DELETE' })
+export async function deleteFreelancer(id: string, options?: ApiOptions): Promise<void> {
+  const response = await fetch(`${API_BASE}/freelancers/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(options),
+  })
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `Delete freelancer failed with status ${response.status}`)
+    await parseJson<never>(response)
   }
 }
 
-export async function fetchProjects(): Promise<Project[]> {
-  const response = await fetch(`${API_BASE}/projects`)
+export async function fetchProjects(options?: ApiOptions): Promise<Project[]> {
+  const response = await fetch(`${API_BASE}/projects`, {
+    headers: authHeaders(options),
+  })
   const rows = await parseJson<ApiProjectRow[]>(response)
   return rows.map(mapProject)
 }
 
-export async function createProject(input: NewProjectInput): Promise<Project> {
+export async function createProject(input: NewProjectInput, options?: ApiOptions): Promise<Project> {
   const response = await fetch(`${API_BASE}/projects`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(projectPayload(input)),
   })
   const row = await parseJson<ApiProjectRow>(response)
   return mapProject(row)
 }
 
-export async function updateProject(id: string, input: NewProjectInput): Promise<Project> {
+export async function updateProject(id: string, input: NewProjectInput, options?: ApiOptions): Promise<Project> {
   const response = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(projectPayload(input)),
   })
   const row = await parseJson<ApiProjectRow>(response)
   return mapProject(row)
 }
 
-export async function deleteProject(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' })
+export async function deleteProject(id: string, options?: ApiOptions): Promise<void> {
+  const response = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(options),
+  })
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `Delete project failed with status ${response.status}`)
+    await parseJson<never>(response)
   }
 }
 
-export async function fetchAllocations(): Promise<Allocation[]> {
-  const response = await fetch(`${API_BASE}/allocations`)
+export async function fetchAllocations(options?: ApiOptions): Promise<Allocation[]> {
+  const response = await fetch(`${API_BASE}/allocations`, {
+    headers: authHeaders(options),
+  })
   const rows = await parseJson<ApiAllocationRow[]>(response)
   return rows.map(mapAllocation)
 }
 
-export async function createAllocation(input: NewAllocationInput): Promise<Allocation> {
+export async function createAllocation(input: NewAllocationInput, options?: ApiOptions): Promise<Allocation> {
   const response = await fetch(`${API_BASE}/allocations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(allocationPayload(input)),
   })
   const row = await parseJson<ApiAllocationRow>(response)
   return mapAllocation(row)
 }
 
-export async function updateAllocation(id: string, input: NewAllocationInput): Promise<Allocation> {
+export async function updateAllocation(id: string, input: NewAllocationInput, options?: ApiOptions): Promise<Allocation> {
   const response = await fetch(`${API_BASE}/allocations/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify(allocationPayload(input)),
   })
   const row = await parseJson<ApiAllocationRow>(response)
   return mapAllocation(row)
 }
 
-export async function deleteAllocation(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/allocations/${id}`, { method: 'DELETE' })
+export async function deleteAllocation(id: string, options?: ApiOptions): Promise<void> {
+  const response = await fetch(`${API_BASE}/allocations/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(options),
+  })
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `Delete allocation failed with status ${response.status}`)
+    await parseJson<never>(response)
   }
 }
 
-export async function importFormsFreelancersCsv(file: File): Promise<CsvImportSummary> {
+export async function importFormsFreelancersCsv(file: File, options?: ApiOptions): Promise<CsvImportSummary> {
   const bytes = await file.arrayBuffer()
   const base64 = btoa(
     Array.from(new Uint8Array(bytes))
@@ -261,7 +288,7 @@ export async function importFormsFreelancersCsv(file: File): Promise<CsvImportSu
 
   const response = await fetch(`${API_BASE}/imports/forms-freelancers`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(options) },
     body: JSON.stringify({
       fileName: file.name,
       csvBase64: base64,

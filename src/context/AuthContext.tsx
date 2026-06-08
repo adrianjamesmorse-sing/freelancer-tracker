@@ -53,6 +53,24 @@ function hasAuthResponseInUrl() {
   return params.has('code') || params.has('error') || window.location.hash.includes('code=')
 }
 
+function isTokenExpiringSoon(token: string | null, leewaySeconds = 300) {
+  if (!token) return true
+
+  try {
+    const [, payload] = token.split('.')
+    if (!payload) return true
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    const claims = JSON.parse(atob(padded)) as {
+      exp?: number
+    }
+    if (!claims.exp) return true
+    return claims.exp * 1000 <= Date.now() + leewaySeconds * 1000
+  } catch {
+    return true
+  }
+}
+
 function useAuthContextValue(
   msal?: {
     instance: ReturnType<typeof useMsal>['instance']
@@ -69,6 +87,11 @@ function useAuthContextValue(
 
   const configured = isEntraConfigured()
   const lastRefreshRef = useRef<number | null>(null)
+  const idTokenRef = useRef<string | null>(idToken)
+
+  useEffect(() => {
+    idTokenRef.current = idToken
+  }, [idToken])
 
   const refreshProfile = useCallback(
     async (preferredToken?: string, preferredAccessToken?: string) => {
@@ -239,8 +262,13 @@ function useAuthContextValue(
       return null
     }
 
+    const currentToken = idTokenRef.current
+    if (!isTokenExpiringSoon(currentToken)) {
+      return currentToken
+    }
+
     if (!msal) {
-      return idToken
+      return currentToken
     }
 
     const { instance, accounts } = msal
@@ -252,16 +280,16 @@ function useAuthContextValue(
     const tokenResult = await instance.acquireTokenSilent({
       account,
       scopes: getLoginScopes(),
-      forceRefresh: true,
     })
 
     if (tokenResult.idToken) {
       setIdToken(tokenResult.idToken)
+      idTokenRef.current = tokenResult.idToken
       return tokenResult.idToken
     }
 
-    return idToken
-  }, [idToken, msal])
+    return currentToken
+  }, [msal])
 
   useEffect(() => {
     let cancelled = false

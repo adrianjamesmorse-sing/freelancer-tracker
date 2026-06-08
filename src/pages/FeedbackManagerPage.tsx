@@ -1,19 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { Panel } from '../components/Panel'
 import { StatCard } from '../components/StatCard'
 import { StatusBadge } from '../components/StatusBadge'
+import { useAuth } from '../context/AuthContext'
 import { useTrackerData } from '../hooks/useTrackerData'
+import { fetchProjectStaff } from '../lib/api'
 import { formatDate } from '../lib/format'
+import type { ProjectStaffAssignment } from '../types'
 
 type FeedbackFilter = 'All' | 'Active' | 'Ended'
 
 export function FeedbackManagerPage() {
   const { projects, getAllocationsForProject, getFreelancerById } = useTrackerData()
+  const { idToken } = useAuth()
   const [filter, setFilter] = useState<FeedbackFilter>('All')
   const [search, setSearch] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projects[0]?.id ?? null)
+  const [internalStaff, setInternalStaff] = useState<ProjectStaffAssignment[]>([])
+  const [peopleMessage, setPeopleMessage] = useState('')
+  const [isLoadingPeople, setIsLoadingPeople] = useState(false)
 
   const projectRows = useMemo(() => {
     const today = new Date()
@@ -62,7 +69,40 @@ export function FeedbackManagerPage() {
 
   const activeCount = projectRows.filter((row) => row.status === 'Active').length
   const endedCount = projectRows.filter((row) => row.status === 'Ended').length
-  const totalParticipants = selectedProject?.participants.length ?? 0
+  const totalParticipants = (selectedProject?.participants.length ?? 0) + internalStaff.length + (selectedProject ? 1 : 0)
+
+  useEffect(() => {
+    if (!selectedProject || !idToken) {
+      setInternalStaff([])
+      return
+    }
+
+    let cancelled = false
+
+    const loadProjectStaff = async () => {
+      setIsLoadingPeople(true)
+      setPeopleMessage('')
+      try {
+        const rows = await fetchProjectStaff(selectedProject.project.id, { idToken })
+        if (!cancelled) {
+          setInternalStaff(rows)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setInternalStaff([])
+          setPeopleMessage(err instanceof Error ? err.message : 'Failed to load internal staff.')
+        }
+      } finally {
+        if (!cancelled) setIsLoadingPeople(false)
+      }
+    }
+
+    void loadProjectStaff()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedProject?.project.id, idToken])
 
   return (
     <div className="space-y-6">
@@ -91,7 +131,7 @@ export function FeedbackManagerPage() {
         <StatCard
           label="Selected participants"
           value={totalParticipants}
-          hint="Freelancers linked to the selected project for feedback readiness."
+          hint="Project owner, internal squad and freelancers linked to the selected project."
           tone="rose"
           icon={<Icon name="users" className="h-5 w-5" />}
         />
@@ -182,7 +222,7 @@ export function FeedbackManagerPage() {
           </div>
         </Panel>
 
-        <Panel title={selectedProject ? selectedProject.project.projectName : 'Project details'} subtitle="Feedback v1 uses shared projects and currently surfaces freelancers only. Internal Entra staff can be added later to complete the 360 model.">
+        <Panel title={selectedProject ? selectedProject.project.projectName : 'Project details'} subtitle="Feedback uses the shared project record, assigned freelancers and internal Entra squad data.">
           {selectedProject ? (
             <div className="space-y-5">
               <div className="rounded-[24px] border border-stone-200 bg-white/80 p-5">
@@ -223,41 +263,83 @@ export function FeedbackManagerPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-stone-900">People on this project</h3>
-                    <p className="mt-1 text-sm text-stone-500">Freelancers are listed now. Internal staff from Entra can be added later in the same model.</p>
+                    <p className="mt-1 text-sm text-stone-500">Internal staff are synced from Entra and combined with freelancer assignments.</p>
                   </div>
                   <span className="inline-flex rounded-full border border-stone-200 bg-[#f8f3ea] px-3 py-1 text-xs text-stone-600">
-                    {selectedProject.participants.length} freelancer{selectedProject.participants.length === 1 ? '' : 's'}
+                    {totalParticipants} people
                   </span>
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-2xl border border-stone-200 bg-[#fbf7ef] p-4">
-                    <div className="text-xs uppercase tracking-[0.14em] text-stone-500">Owner / manager</div>
-                    <div className="mt-2 text-sm font-medium text-stone-900">{selectedProject.project.projectManagerName || 'Unassigned'}</div>
-                    <div className="mt-1 text-sm text-stone-500">Project manager</div>
+                  {peopleMessage ? (
+                    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+                      {peopleMessage}
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Project leader</div>
+                    <FeedbackPersonCard
+                      name={selectedProject.project.projectManagerName || 'Unassigned'}
+                      email={selectedProject.project.projectManagerEmail || ''}
+                      role="Project leader"
+                      detail="Internal staff"
+                      featured
+                    />
                   </div>
 
-                  {selectedProject.participants.map(({ allocation, freelancer }) => (
-                    <div key={allocation.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-medium text-stone-900">{freelancer.freelancerName}</div>
-                          <div className="mt-1 text-sm text-stone-500">Team member · {allocation.roleWithinProject || 'Role not set'}</div>
-                        </div>
-                        <StatusBadge value={allocation.allocationStatus} />
-                      </div>
-                      <dl className="mt-3 grid gap-3 text-sm text-stone-600 sm:grid-cols-2">
-                        <div>
-                          <dt className="text-stone-500">Dates</dt>
-                          <dd className="mt-1 font-medium text-stone-900">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-stone-500">Owner</dt>
-                          <dd className="mt-1 font-medium text-stone-900">{allocation.ownerManagerName || '—'}</dd>
-                        </div>
-                      </dl>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Internal squad</div>
+                      {isLoadingPeople ? <div className="text-xs text-stone-500">Loading…</div> : null}
                     </div>
-                  ))}
+
+                    {internalStaff.length ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {internalStaff.map((staff) => (
+                          <FeedbackPersonCard
+                            key={staff.id}
+                            name={staff.fullName}
+                            email={staff.email}
+                            role={staff.assignmentRole}
+                            detail={staff.jobTitle || staff.department || 'Internal staff'}
+                            photoUrl={staff.photoUrl}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-stone-300 bg-[#fbf7ef] px-4 py-6 text-center text-sm text-stone-500">
+                        No internal squad members are assigned yet.
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Freelancers</div>
+                    <div className="space-y-3">
+                      {selectedProject.participants.map(({ allocation, freelancer }) => (
+                        <div key={allocation.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-medium text-stone-900">{freelancer.freelancerName}</div>
+                              <div className="mt-1 text-sm text-stone-500">Freelancer · {allocation.roleWithinProject || 'Role not set'}</div>
+                            </div>
+                            <StatusBadge value={allocation.allocationStatus} />
+                          </div>
+                          <dl className="mt-3 grid gap-3 text-sm text-stone-600 sm:grid-cols-2">
+                            <div>
+                              <dt className="text-stone-500">Dates</dt>
+                              <dd className="mt-1 font-medium text-stone-900">{formatDate(allocation.contractStartDate)} → {formatDate(allocation.contractEndDate)}</dd>
+                            </div>
+                            <div>
+                              <dt className="text-stone-500">Owner</dt>
+                              <dd className="mt-1 font-medium text-stone-900">{allocation.ownerManagerName || '—'}</dd>
+                            </div>
+                          </dl>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   {!selectedProject.participants.length ? (
                     <div className="rounded-2xl border border-dashed border-stone-300 bg-[#fbf7ef] px-4 py-8 text-center text-sm text-stone-500">
@@ -273,7 +355,7 @@ export function FeedbackManagerPage() {
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-stone-900">Next feedback step</h3>
                 <p className="mt-2 text-sm leading-6 text-stone-700">
-                  Build project-end and continuous 360 feedback flows around this people list, then add internal Vertex staff from Entra as additional review participants.
+                  Build project-end and continuous 360 feedback flows around the internal squad, freelancers and project leader.
                 </p>
                 <div className="mt-4">
                   <Link to={`/projects/${selectedProject.project.id}`} className="inline-flex items-center gap-2 rounded-2xl border border-stone-300 bg-white/90 px-4 py-2 text-sm font-medium text-stone-800 transition hover:bg-white">
@@ -289,6 +371,52 @@ export function FeedbackManagerPage() {
             </div>
           )}
         </Panel>
+      </div>
+    </div>
+  )
+}
+
+function FeedbackPersonCard({
+  name,
+  email,
+  role,
+  detail,
+  photoUrl,
+  featured = false,
+}: {
+  name: string
+  email: string
+  role: string
+  detail: string
+  photoUrl?: string | null
+  featured?: boolean
+}) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+
+  return (
+    <div
+      className={[
+        'flex items-center gap-3 rounded-2xl border bg-white p-4 shadow-sm',
+        featured ? 'border-olive-200 bg-[#fbf7ef]' : 'border-stone-200',
+      ].join(' ')}
+    >
+      {photoUrl ? (
+        <img src={photoUrl} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-stone-200" />
+      ) : (
+        <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-olive-700 text-sm font-semibold text-white ring-1 ring-stone-200">
+          {initials || 'V'}
+        </div>
+      )}
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium text-stone-900">{name}</div>
+        <div className="mt-1 text-xs font-medium text-stone-600">{role}</div>
+        <div className="mt-1 truncate text-xs text-stone-500">{detail}</div>
+        {email ? <div className="mt-1 truncate text-xs text-stone-400">{email}</div> : null}
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ const sectionRoles: Record<AppSection, VertexRole[]> = {
 }
 
 const routeRoles: Array<{ pattern: RegExp; roles: VertexRole[] }> = [
+  { pattern: /^\/$/, roles: ['editor', 'admin'] },
   { pattern: /^\/admin/, roles: ['admin'] },
   { pattern: /^\/imports$/, roles: ['editor', 'admin'] },
   { pattern: /^\/notifications$/, roles: ['editor', 'admin'] },

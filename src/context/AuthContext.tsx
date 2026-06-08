@@ -212,11 +212,14 @@ function useAuthContextValue(
           details = String(err)
         }
 
-        if (mapped.length && baseMessage.includes('not authorized')) {
+        if (baseMessage.includes('not authorized')) {
+          const roleContext = mapped.length
+            ? ` Microsoft returned ${claimRoles.join(', ')}; Vertex recognised ${mapped.join(', ')}.`
+            : ''
           setAuthError(
-            `${baseMessage} Your token includes: ${claimRoles.join(', ')}. Vertex mapped that to: ${mapped.join(', ')}. If this persists, redeploy the latest API build.`,
+            'You do not currently have access to Vertex. Ask a Vertex administrator to assign you Viewer, Editor, or Admin access.',
           )
-          setAuthErrorDetails(details)
+          setAuthErrorDetails(`${details ?? baseMessage}${roleContext}`)
         } else {
           setAuthError(baseMessage)
           setAuthErrorDetails(details)

@@ -6,8 +6,9 @@ import { isAuthDisabled } from '../lib/entraSettings'
 
 export function LoginPage() {
   const location = useLocation()
-  const { ready, isAuthenticated, configured, authError, authErrorDetails, tokenRoles, signIn, devMode } = useAuth()
+  const { ready, isAuthenticated, configured, authError, authErrorDetails, tokenRoles, signIn, devMode, canAccessPath } = useAuth()
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
+  const authenticatedDestination = canAccessPath(returnTo) ? returnTo : '/freelancers'
   const mappedRoles = mapRoleStrings(tokenRoles)
 
   if (isAuthDisabled()) {
@@ -15,7 +16,7 @@ export function LoginPage() {
   }
 
   if (ready && isAuthenticated) {
-    return <Navigate to={returnTo} replace />
+    return <Navigate to={authenticatedDestination} replace />
   }
 
   return (

@@ -23,6 +23,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!canAccessPath(location.pathname)) {
+    if (location.pathname === '/') {
+      return <Navigate to="/freelancers" replace />
+    }
+
     return (
       <div className="rounded-3xl border border-stone-200 bg-white/85 p-8 text-center shadow-panel">
         <h2 className="text-xl font-semibold text-stone-900">Access restricted</h2>

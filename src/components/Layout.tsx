@@ -36,7 +36,7 @@ const appLinks: Array<{
 }> = [
   {
     key: 'freelancers',
-    to: '/',
+    to: '/freelancers',
     label: 'Freelancers',
     icon: 'users',
     match: ['/', '/freelancers', '/request', '/onboarding', '/financials', '/imports', '/notifications'],
@@ -81,6 +81,8 @@ export function Layout({ children }: PropsWithChildren) {
     [canAccessSection],
   )
 
+  const homePath = visibleAppLinks[0]?.to ?? '/freelancers'
+
   const currentApp =
     visibleAppLinks.find((app) =>
       app.match.some(
@@ -105,7 +107,7 @@ export function Layout({ children }: PropsWithChildren) {
         <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-[#f7f2e8]/92 backdrop-blur-xl">
           <div className="mx-auto flex h-[50px] max-w-[1920px] items-center gap-2 px-2 sm:gap-3 sm:px-4 xl:px-5">
             <Link
-              to="/"
+              to={homePath}
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-stone-200 bg-white/90 text-brand-700 shadow-sm sm:h-9 sm:w-9"
               title="Vertex"
             >

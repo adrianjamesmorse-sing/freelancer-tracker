@@ -58,26 +58,16 @@ function extractRawRoles(payload: JWTPayload): string[] {
   return []
 }
 
-function mapRawRoleStrings(rawRoles: string[], email: string): VertexRole[] {
+function mapRawRoleStrings(rawRoles: string[]): VertexRole[] {
   const mapped = rawRoles
     .map((role) => ROLE_ALIASES[normalizeRoleKey(role)])
     .filter((role): role is VertexRole => Boolean(role))
 
-  if (mapped.length) {
-    return [...new Set(mapped)]
-  }
-
-  const allowedDomain = (process.env.ENTRA_ALLOWED_DOMAIN || 'singulier.co').toLowerCase()
-  if (email.endsWith(`@${allowedDomain}`)) {
-    return ['viewer']
-  }
-
-  return []
+  return [...new Set(mapped)]
 }
 
 export function mapRolesFromToken(payload: JWTPayload): VertexRole[] {
-  const email = String(payload.preferred_username ?? payload.email ?? payload.upn ?? '').toLowerCase()
-  return mapRawRoleStrings(extractRawRoles(payload), email)
+  return mapRawRoleStrings(extractRawRoles(payload))
 }
 
 export function isAuthConfigured() {
@@ -150,12 +140,12 @@ export async function verifyBearerToken(
     }
   }
 
-  const roles = mapRawRoleStrings(rawRoles, email)
+  const roles = mapRawRoleStrings(rawRoles)
 
   if (!roles.length) {
     const roleHint = rawRoles.length
       ? `Roles assigned in Entra: ${rawRoles.join(', ')}. Expected app role values: vertex.admin, vertex.editor, or vertex.viewer.`
-      : 'No application roles were found for your account. Assign vertex.admin (or viewer/editor) on the Vertex enterprise app → Users and groups. Grant the API AppRoleAssignment.Read.All (or Directory.Read.All) permission if roles are assigned but not detected.'
+      : 'No Vertex app role assignment was found for your account. Assign vertex.viewer, vertex.editor, or vertex.admin on the Vertex enterprise app → Users and groups. If a role is assigned but still not detected, grant the API AppRoleAssignment.Read.All (or Directory.Read.All) application permission and admin consent.'
     throw new Error(`Your Entra account is not authorized for Vertex. ${roleHint}`)
   }
 

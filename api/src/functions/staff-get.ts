@@ -3,6 +3,7 @@ import { authenticateRequest, hasRole, isAuthConfigured } from '../lib/entraAuth
 import { preflight, withCors } from '../lib/cors.js'
 import { query } from '../lib/db.js'
 import { error, json } from '../lib/response.js'
+import { ensureStaffDirectorySchema } from '../lib/staffSchema.js'
 
 app.http('staff-get', {
   methods: ['GET', 'OPTIONS'],
@@ -26,6 +27,8 @@ app.http('staff-get', {
     }
 
     try {
+      await ensureStaffDirectorySchema()
+
       const result = await query<{
         id: string
         entra_user_id: string | null

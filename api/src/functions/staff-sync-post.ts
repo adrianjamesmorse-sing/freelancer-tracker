@@ -4,6 +4,7 @@ import { preflight, withCors } from '../lib/cors.js'
 import { query } from '../lib/db.js'
 import { fetchAllStaffUsers, getGraphAccessToken, toStaffRecord } from '../lib/graphClient.js'
 import { error, json } from '../lib/response.js'
+import { ensureStaffDirectorySchema } from '../lib/staffSchema.js'
 
 app.http('staff-sync-post', {
   methods: ['POST', 'OPTIONS'],
@@ -27,6 +28,8 @@ app.http('staff-sync-post', {
     }
 
     try {
+      await ensureStaffDirectorySchema()
+
       const accessToken = await getGraphAccessToken()
       const graphUsers = await fetchAllStaffUsers(accessToken)
 

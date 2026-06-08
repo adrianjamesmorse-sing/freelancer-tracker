@@ -14,7 +14,7 @@ type FeedbackFilter = 'All' | 'Active' | 'Ended'
 
 export function FeedbackManagerPage() {
   const { projects, getAllocationsForProject, getFreelancerById } = useTrackerData()
-  const { idToken } = useAuth()
+  const { idToken, getFreshIdToken } = useAuth()
   const [filter, setFilter] = useState<FeedbackFilter>('All')
   const [search, setSearch] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projects[0]?.id ?? null)
@@ -83,14 +83,23 @@ export function FeedbackManagerPage() {
       setIsLoadingPeople(true)
       setPeopleMessage('')
       try {
-        const rows = await fetchProjectStaff(selectedProject.project.id, { idToken })
+        const freshToken = await getFreshIdToken()
+        if (!freshToken) {
+          throw new Error('Please sign in again to load internal staff.')
+        }
+        const rows = await fetchProjectStaff(selectedProject.project.id, { idToken: freshToken })
         if (!cancelled) {
           setInternalStaff(rows)
         }
       } catch (err) {
         if (!cancelled) {
           setInternalStaff([])
-          setPeopleMessage(err instanceof Error ? err.message : 'Failed to load internal staff.')
+          const message = err instanceof Error ? err.message : 'Failed to load internal staff.'
+          setPeopleMessage(
+            message.includes('"exp" claim') || message.includes('Microsoft sign-in token')
+              ? 'Your Microsoft session expired. Refresh the page or sign in again to reload internal staff.'
+              : message,
+          )
         }
       } finally {
         if (!cancelled) setIsLoadingPeople(false)
@@ -102,7 +111,7 @@ export function FeedbackManagerPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedProject?.project.id, idToken])
+  }, [selectedProject?.project.id, idToken, getFreshIdToken])
 
   return (
     <div className="space-y-6">

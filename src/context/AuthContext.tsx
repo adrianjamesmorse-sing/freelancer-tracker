@@ -35,6 +35,7 @@ type AuthContextValue = {
   signIn: () => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  getFreshIdToken: () => Promise<string | null>
   canAccessPath: (pathname: string) => boolean
   canAccessSection: (section: 'freelancers' | 'feedback' | 'projects' | 'admin') => boolean
 }
@@ -233,6 +234,35 @@ function useAuthContextValue(
     [msal],
   )
 
+  const getFreshIdToken = useCallback(async () => {
+    if (isAuthDisabled()) {
+      return null
+    }
+
+    if (!msal) {
+      return idToken
+    }
+
+    const { instance, accounts } = msal
+    const account = instance.getActiveAccount() ?? accounts[0]
+    if (!account) {
+      return null
+    }
+
+    const tokenResult = await instance.acquireTokenSilent({
+      account,
+      scopes: getLoginScopes(),
+      forceRefresh: true,
+    })
+
+    if (tokenResult.idToken) {
+      setIdToken(tokenResult.idToken)
+      return tokenResult.idToken
+    }
+
+    return idToken
+  }, [idToken, msal])
+
   useEffect(() => {
     let cancelled = false
 
@@ -335,6 +365,7 @@ function useAuthContextValue(
       signIn,
       signOut,
       refreshProfile: () => refreshProfile(),
+      getFreshIdToken,
       canAccessPath: (pathname) => canAccessPath(roles, pathname),
       canAccessSection: (section) => canAccessSection(roles, section),
     }),
@@ -352,6 +383,7 @@ function useAuthContextValue(
       signIn,
       signOut,
       refreshProfile,
+      getFreshIdToken,
     ],
   )
 }

@@ -23,7 +23,7 @@ export function ProjectDetailPage() {
     isProjectsLoaded,
     isAllocationsLoaded,
   } = useTrackerData()
-  const { idToken, roles } = useAuth()
+  const { idToken, roles, getFreshIdToken } = useAuth()
   const canEditProjectStaff = roles.includes('editor') || roles.includes('admin')
 
   const project = id ? getProjectById(id) : undefined
@@ -114,9 +114,13 @@ export function ProjectDetailPage() {
       setStaffLoading(true)
       setStaffMessage('')
       try {
+        const freshToken = await getFreshIdToken()
+        if (!freshToken) {
+          throw new Error('Please sign in again to load the project squad.')
+        }
         const [staffRows, assignmentRows] = await Promise.all([
-          fetchStaff(idToken),
-          fetchProjectStaff(project.id, { idToken }),
+          fetchStaff(freshToken),
+          fetchProjectStaff(project.id, { idToken: freshToken }),
         ])
         if (!cancelled) {
           const assignedIds = new Set(assignmentRows.map((assignment) => assignment.staffId))
@@ -129,7 +133,7 @@ export function ProjectDetailPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setStaffMessage(err instanceof Error ? err.message : 'Failed to load project squad.')
+          setStaffMessage(formatProjectStaffError(err, 'Failed to load project squad.'))
         }
       } finally {
         if (!cancelled) setStaffLoading(false)
@@ -141,7 +145,7 @@ export function ProjectDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [project?.id, idToken])
+  }, [project?.id, idToken, getFreshIdToken])
 
   if (!isReady) {
     return (
@@ -193,41 +197,49 @@ export function ProjectDetailPage() {
 
   const handleAssignStaff = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!project || !idToken || !selectedStaffId) return
+    if (!project || !selectedStaffId) return
 
     setIsAssigningStaff(true)
     setStaffMessage('')
     try {
+      const freshToken = await getFreshIdToken()
+      if (!freshToken) {
+        throw new Error('Please sign in again to update the project squad.')
+      }
       await createProjectStaff(
         project.id,
         {
           staffId: selectedStaffId,
           assignmentRole: selectedStaffRole,
         },
-        { idToken },
+        { idToken: freshToken },
       )
-      const rows = await fetchProjectStaff(project.id, { idToken })
+      const rows = await fetchProjectStaff(project.id, { idToken: freshToken })
       const assignedIds = new Set(rows.map((assignment) => assignment.staffId))
       setProjectStaff(rows)
       setSelectedStaffId(staffDirectory.find((staff) => !assignedIds.has(staff.id))?.id || '')
       setStaffMessage('Squad member added.')
     } catch (err) {
-      setStaffMessage(err instanceof Error ? err.message : 'Failed to add squad member.')
+      setStaffMessage(formatProjectStaffError(err, 'Failed to add squad member.'))
     } finally {
       setIsAssigningStaff(false)
     }
   }
 
   const handleRemoveStaff = async (assignmentId: string) => {
-    if (!project || !idToken) return
+    if (!project) return
     setRemovingStaffId(assignmentId)
     setStaffMessage('')
     try {
-      await deleteProjectStaff(project.id, assignmentId, { idToken })
+      const freshToken = await getFreshIdToken()
+      if (!freshToken) {
+        throw new Error('Please sign in again to update the project squad.')
+      }
+      await deleteProjectStaff(project.id, assignmentId, { idToken: freshToken })
       setProjectStaff((current) => current.filter((assignment) => assignment.id !== assignmentId))
       setStaffMessage('Squad member removed.')
     } catch (err) {
-      setStaffMessage(err instanceof Error ? err.message : 'Failed to remove squad member.')
+      setStaffMessage(formatProjectStaffError(err, 'Failed to remove squad member.'))
     } finally {
       setRemovingStaffId(null)
     }
@@ -514,6 +526,14 @@ export function ProjectDetailPage() {
       </div>
     </div>
   )
+}
+
+function formatProjectStaffError(err: unknown, fallback: string) {
+  const message = err instanceof Error ? err.message : fallback
+  if (message.includes('"exp" claim') || message.includes('Microsoft sign-in token')) {
+    return 'Your Microsoft session expired. Refresh the page or sign in again to reload the project squad.'
+  }
+  return message
 }
 
 function SquadPersonCard({

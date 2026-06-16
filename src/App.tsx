@@ -6,7 +6,14 @@ import { AdminCredentialsPage } from './pages/AdminCredentialsPage'
 import { AdminGraphPage } from './pages/AdminGraphPage'
 import { AdminSSOPage } from './pages/AdminSSOPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { FeedbackManagerPage } from './pages/FeedbackManagerPage'
+import {
+  FeedbackAssignmentsPage,
+  FeedbackCalibrationPage,
+  FeedbackDashboardPage,
+  FeedbackProjectBrowserPage,
+  FeedbackReviewPage,
+  FeedbackTemplatesPage,
+} from './pages/FeedbackManagerPage'
 import { FinancialsPage } from './pages/FinancialsPage'
 import { FreelancerDetailPage } from './pages/FreelancerDetailPage'
 import { FreelancerOnboardingPage } from './pages/FreelancerOnboardingPage'
@@ -38,7 +45,14 @@ function AppRoutes() {
                 <Route path="/financials" element={<FinancialsPage />} />
                 <Route path="/imports" element={<ImportsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/feedback" element={<FeedbackManagerPage />} />
+                <Route path="/feedback" element={<Navigate to="/feedback/dashboard" replace />} />
+                <Route path="/feedback/dashboard" element={<FeedbackDashboardPage />} />
+                <Route path="/feedback/assignments" element={<FeedbackAssignmentsPage />} />
+                <Route path="/feedback/reviews" element={<FeedbackReviewPage />} />
+                <Route path="/feedback/reviews/:assignmentId" element={<FeedbackReviewPage />} />
+                <Route path="/feedback/calibration" element={<FeedbackCalibrationPage />} />
+                <Route path="/feedback/templates" element={<FeedbackTemplatesPage />} />
+                <Route path="/feedback/project-browser" element={<FeedbackProjectBrowserPage />} />
                 <Route path="/admin" element={<Navigate to="/admin/sso" replace />} />
                 <Route path="/admin/sso" element={<AdminSSOPage />} />
                 <Route path="/admin/graph" element={<AdminGraphPage />} />

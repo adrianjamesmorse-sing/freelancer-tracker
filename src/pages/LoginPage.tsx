@@ -2,7 +2,12 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../context/AuthContext'
 import { mapRoleStrings } from '../lib/entraRoles'
-import { isAuthDisabled } from '../lib/entraSettings'
+import {
+  canUseLocalAuthBypass,
+  enableLocalAuthBypass,
+  getEntraClientSettings,
+  isAuthDisabled,
+} from '../lib/entraSettings'
 
 export function LoginPage() {
   const location = useLocation()
@@ -10,6 +15,13 @@ export function LoginPage() {
   const returnTo = (location.state as { from?: string } | null)?.from ?? '/'
   const authenticatedDestination = canAccessPath(returnTo) ? returnTo : '/freelancers'
   const mappedRoles = mapRoleStrings(tokenRoles)
+  const localBypassAvailable = canUseLocalAuthBypass()
+  const redirectUri = typeof window !== 'undefined' ? getEntraClientSettings().redirectUri : ''
+
+  const continueAsLocalAdmin = () => {
+    if (!enableLocalAuthBypass()) return
+    window.location.assign(authenticatedDestination)
+  }
 
   if (isAuthDisabled()) {
     return <Navigate to={returnTo} replace />
@@ -69,21 +81,41 @@ export function LoginPage() {
         {!ready ? (
           <div className="mt-6 text-sm text-stone-600">Completing Microsoft sign-in…</div>
         ) : (
-          <button
-            type="button"
-            className="btn-primary mt-6 w-full justify-center"
-            disabled={!configured}
-            onClick={() => void signIn()}
-          >
-            <Icon name="shield" className="h-4 w-4" />
-            Continue with Microsoft
-          </button>
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              className="btn-primary w-full justify-center"
+              disabled={!configured}
+              onClick={() => void signIn()}
+            >
+              <Icon name="shield" className="h-4 w-4" />
+              Continue with Microsoft
+            </button>
+
+            {localBypassAvailable ? (
+              <button
+                type="button"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 transition hover:bg-stone-100"
+                onClick={continueAsLocalAdmin}
+              >
+                <Icon name="settings" className="h-4 w-4" />
+                Continue as local admin
+              </button>
+            ) : null}
+          </div>
         )}
 
         <p className="mt-5 text-xs leading-5 text-stone-500">
           Assign app roles on the Vertex <strong>enterprise application</strong> (Users and groups).<br />
-          Redirect URI: <strong>https://vertex.singulier.co/login</strong>
+          Redirect URI: <strong>{redirectUri || 'Not configured'}</strong>
         </p>
+
+        {localBypassAvailable ? (
+          <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+            Local admin bypass is available only on the Vite dev server at localhost. It skips
+            Microsoft redirect for UI testing and stores a browser-local flag until you sign out.
+          </p>
+        ) : null}
       </div>
     </div>
   )

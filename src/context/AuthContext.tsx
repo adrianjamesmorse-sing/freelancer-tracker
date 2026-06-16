@@ -15,9 +15,11 @@ import { fetchAuthMe } from '../lib/authApi'
 import type { AuthUser } from '../lib/authApi'
 import { extractRoleStrings, mapRoleStrings } from '../lib/entraRoles'
 import {
+  disableLocalAuthBypass,
   getEntraClientSettings,
   isAuthDisabled,
   isEntraConfigured,
+  isLocalAuthBypassActive,
 } from '../lib/entraSettings'
 import { getLoginScopes, getMsalInstance, handleRedirectOnce } from '../lib/msal'
 
@@ -46,6 +48,22 @@ const devUser: AuthUser = {
   email: 'dev@vertex.local',
   fullName: 'Development User',
   roles: ['admin'],
+}
+
+const APP_SIGNED_OUT_KEY = 'vertex-app-signed-out'
+
+function isAppSignedOut() {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(APP_SIGNED_OUT_KEY) === 'true'
+}
+
+function setAppSignedOut(value: boolean) {
+  if (typeof window === 'undefined') return
+  if (value) {
+    window.localStorage.setItem(APP_SIGNED_OUT_KEY, 'true')
+  } else {
+    window.localStorage.removeItem(APP_SIGNED_OUT_KEY)
+  }
 }
 
 function hasAuthResponseInUrl() {
@@ -103,6 +121,7 @@ function useAuthContextValue(
       lastRefreshRef.current = now
 
       if (isAuthDisabled()) {
+        setAppSignedOut(false)
         setDevMode(true)
         setUser(devUser)
         setIdToken(null)
@@ -115,6 +134,16 @@ function useAuthContextValue(
       if (!msal) {
         setUser(null)
         setIdToken(null)
+        return
+      }
+
+      if (isAppSignedOut() && !hasAuthResponseInUrl()) {
+        setDevMode(false)
+        setUser(null)
+        setIdToken(null)
+        setAuthError(null)
+        setAuthErrorDetails(null)
+        setTokenRoles([])
         return
       }
 
@@ -262,6 +291,10 @@ function useAuthContextValue(
       return null
     }
 
+    if (isAppSignedOut()) {
+      return null
+    }
+
     const currentToken = idTokenRef.current
     if (!isTokenExpiringSoon(currentToken)) {
       return currentToken
@@ -354,6 +387,7 @@ function useAuthContextValue(
 
   const signIn = useCallback(async () => {
     if (!msal) return
+    setAppSignedOut(false)
     setAuthError(null)
     setAuthErrorDetails(null)
     await msal.instance.loginRedirect({
@@ -364,15 +398,21 @@ function useAuthContextValue(
   }, [msal])
 
   const signOut = useCallback(async () => {
+    if (isLocalAuthBypassActive()) {
+      disableLocalAuthBypass()
+      setAppSignedOut(false)
+      window.location.assign('/login')
+      return
+    }
+
+    setAppSignedOut(true)
     setUser(null)
     setIdToken(null)
     setAuthError(null)
     setAuthErrorDetails(null)
     setTokenRoles([])
-    if (!msal) return
-    await msal.instance.logoutRedirect({
-      postLogoutRedirectUri: `${window.location.origin}/login`,
-    })
+    msal?.instance.setActiveAccount(null)
+    window.location.assign('/login')
   }, [msal])
 
   const roles = user?.roles ?? []

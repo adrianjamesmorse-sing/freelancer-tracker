@@ -19,7 +19,14 @@ const freelancerLinks = [
   { to: '/notifications', label: 'Notifications', icon: 'bell' as const },
 ]
 
-const feedbackLinks = [{ to: '/feedback', label: 'Project browser', icon: 'message-square' as const }]
+const feedbackLinks = [
+  { to: '/feedback/dashboard', label: 'Dashboard', icon: 'dashboard' as const },
+  { to: '/feedback/assignments', label: 'Assignments', icon: 'apps' as const },
+  { to: '/feedback/reviews', label: 'Review Form', icon: 'message-square' as const },
+  { to: '/feedback/calibration', label: 'Calibration', icon: 'chart' as const },
+  { to: '/feedback/templates', label: 'Templates', icon: 'settings' as const },
+  { to: '/feedback/project-browser', label: 'Project Browser', icon: 'folder' as const },
+]
 const projectLinks = [{ to: '/projects', label: 'Projects', icon: 'folder' as const }]
 const adminLinks = [
   { to: '/admin/sso', label: 'SSO', icon: 'shield' as const },
@@ -41,7 +48,7 @@ const appLinks: Array<{
     icon: 'users',
     match: ['/', '/freelancers', '/request', '/onboarding', '/financials', '/imports', '/notifications'],
   },
-  { key: 'feedback', to: '/feedback', label: 'Feedback', icon: 'message-square', match: ['/feedback'] },
+  { key: 'feedback', to: '/feedback/dashboard', label: 'Feedback', icon: 'message-square', match: ['/feedback'] },
   { key: 'projects', to: '/projects', label: 'Projects', icon: 'folder', match: ['/projects'] },
   { key: 'admin', to: '/admin/sso', label: 'Admin', icon: 'shield', match: ['/admin'] },
 ]
@@ -217,7 +224,7 @@ export function Layout({ children }: PropsWithChildren) {
                     to={link.to}
                     end={
                       link.to === '/' ||
-                      link.to === '/feedback' ||
+                      link.to === '/feedback/dashboard' ||
                       link.to === '/projects' ||
                       link.to === '/request' ||
                       link.to === '/onboarding'

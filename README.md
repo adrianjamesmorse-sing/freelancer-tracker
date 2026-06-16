@@ -31,7 +31,16 @@ cd api && func start
 npm run dev
 ```
 
-Skip Entra locally: set `VITE_AUTH_DISABLED=true` in `.env`.
+Skip Entra locally:
+
+- On `npm run dev` at `localhost` / `127.0.0.1`, use **Continue as local admin** on the login screen.
+- Or set `VITE_AUTH_DISABLED=true` in `.env` to bypass Entra for the whole local session.
+
+The local admin bypass is dev-only and browser-local; sign out clears it.
+
+Vertex sign-out is app-local: it returns the user to `/login` and leaves the browser's Microsoft
+Entra SSO session intact. Choosing **Continue with Microsoft** can therefore reuse the existing SSO
+session unless Microsoft requires re-authentication.
 
 ## Deploy (Azure Static Web Apps)
 
@@ -59,7 +68,7 @@ Optional GitHub Actions secrets (build step only):
 
 ### Entra app registration
 
-1. **Authentication** → SPA redirect: `https://<your-host>/login` (and `http://localhost:5173/login` for dev).
+1. **Authentication** → SPA redirect: `https://<your-host>/login`. Add `http://localhost:5173/login` only if you want to test the real Entra redirect locally; otherwise use the local admin bypass above.
 2. **App roles** on the Vertex enterprise app with **Value**: `vertex.viewer`, `vertex.editor`, `vertex.admin` – assign users or groups to those roles (not only separate security group names).
 3. **API permissions** (application, + admin consent): `User.Read.All` (staff sync), `AppRoleAssignment.Read.All` (read `vertex.admin` / etc. when the ID token has no `roles` claim).
 

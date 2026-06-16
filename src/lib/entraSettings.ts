@@ -8,6 +8,8 @@ export type EntraClientSettings = {
   redirectUri: string
 }
 
+const LOCAL_AUTH_BYPASS_KEY = 'vertex-local-admin-bypass'
+
 let remoteConfig: AuthConfig | null = null
 let loadPromise: Promise<void> | null = null
 
@@ -56,10 +58,31 @@ export function getEntraClientSettings(): EntraClientSettings {
 }
 
 export function isAuthDisabled() {
-  return import.meta.env.VITE_AUTH_DISABLED === 'true'
+  return import.meta.env.VITE_AUTH_DISABLED === 'true' || isLocalAuthBypassActive()
 }
 
 export function isEntraConfigured() {
   const settings = getEntraClientSettings()
   return Boolean(settings.clientId && settings.tenantId)
+}
+
+export function canUseLocalAuthBypass() {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+}
+
+export function isLocalAuthBypassActive() {
+  if (!canUseLocalAuthBypass()) return false
+  return window.localStorage.getItem(LOCAL_AUTH_BYPASS_KEY) === 'true'
+}
+
+export function enableLocalAuthBypass() {
+  if (!canUseLocalAuthBypass()) return false
+  window.localStorage.setItem(LOCAL_AUTH_BYPASS_KEY, 'true')
+  return true
+}
+
+export function disableLocalAuthBypass() {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(LOCAL_AUTH_BYPASS_KEY)
 }
